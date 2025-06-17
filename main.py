@@ -8,6 +8,7 @@ import os
 import sys
 import yaml
 import logging
+import platform
 from pathlib import Path
 from datetime import datetime
 import click
@@ -32,6 +33,7 @@ class SubtitleApp:
         self.logger = setup_logging(self.config)
         self.video_processor = VideoProcessor(self.config)
         self.subtitle_generator = SubtitleGenerator(self.config)
+        self.interactive_mode = sys.stdin.isatty() and sys.stdout.isatty()
         
     def display_welcome(self):
         """Display welcome message and application info."""
@@ -285,18 +287,33 @@ Features:
         console.print("\n[bold yellow]Your files are ready![/bold yellow]")
         console.print(f"Files saved to: [cyan]{output_files[0].parent}[/cyan]")
         
-        # Open folder option
-        if Confirm.ask("\nOpen output folder?", default=True):
-            import subprocess
-            import platform
-            
-            folder = str(output_files[0].parent)
-            if platform.system() == 'Windows':
-                os.startfile(folder)
-            elif platform.system() == 'Darwin':  # macOS
-                subprocess.Popen(['open', folder])
-            else:  # Linux
-                subprocess.Popen(['xdg-open', folder])
+        # Open folder option (only in interactive mode)
+        try:
+            # Check if we're in an interactive terminal
+            if self.interactive_mode:
+                if Confirm.ask("\nOpen output folder?", default=True):
+                    import subprocess
+                    
+                    folder = str(output_files[0].parent)
+                    if platform.system() == 'Windows':
+                        os.startfile(folder)
+                    elif platform.system() == 'Darwin':  # macOS
+                        subprocess.Popen(['open', folder])
+                    else:  # Linux
+                        subprocess.Popen(['xdg-open', folder])
+            else:
+                # Non-interactive mode - just print the command
+                console.print(f"\n[dim]To open the output folder:[/dim]")
+                folder = str(output_files[0].parent)
+                if platform.system() == 'Windows':
+                    console.print(f"[cyan]explorer {folder}[/cyan]")
+                elif platform.system() == 'Darwin':  # macOS
+                    console.print(f"[cyan]open {folder}[/cyan]")
+                else:  # Linux
+                    console.print(f"[cyan]xdg-open {folder}[/cyan]")
+        except Exception as e:
+            # If any error occurs, just skip opening the folder
+            self.logger.debug(f"Could not handle folder opening: {e}")
 
 @click.command()
 @click.option('--config', '-c', default='config.yaml', help='Path to configuration file')
@@ -333,6 +350,11 @@ def main(config, video, lang, method):
                 app.config._config['subtitles']['hindi_translation_method'] = method
         else:
             # Interactive mode
+            if not app.interactive_mode:
+                console.print("[red]Cannot run in interactive mode without a terminal[/red]")
+                console.print("Use command line options: --video <file> --lang <language>")
+                return
+                
             app.display_welcome()
             settings = app.get_user_input()
             

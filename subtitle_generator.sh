@@ -163,66 +163,104 @@ main() {
     # Create a simple Python runner that calls our main app
     print_status "Starting subtitle generation..."
     
-    # Use Python directly with command line arguments
-    python3 << EOF
+    # Create a temporary Python script file to avoid EOF issues
+    cat > /tmp/subtitle_generator_runner.py << 'PYEOF'
 import sys
 import os
 from pathlib import Path
 
-# Add current directory to path
-sys.path.insert(0, os.getcwd())
+# Add project directory to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import and run
 from main import SubtitleApp
+
+# Get parameters from environment
+video_file = os.environ['VIDEO_FILE']
+target_lang = os.environ['TARGET_LANG']
+hindi_method = os.environ.get('HINDI_METHOD', 'direct')
+output_dir = os.environ['OUTPUT_DIR']
 
 # Create app instance
 app = SubtitleApp('config.yaml')
 
 # Override config for this run
-if '$target_lang' == 'hi':
-    app.config._config['subtitles']['hindi_translation_method'] = '$hindi_method'
+if target_lang == 'hi':
+    app.config._config['subtitles']['hindi_translation_method'] = hindi_method
 
 # Process video
 settings = {
-    'video_path': Path('$video_file'),
+    'video_path': Path(video_file),
     'source_language': 'auto',
-    'target_language': '$target_lang',
+    'target_language': target_lang,
     'formats': ['srt', 'vtt'],
     'burn_subtitles': False,
-    'output_dir': Path('$output_dir')
+    'output_dir': Path(output_dir)
 }
 
 try:
     success = app.process_video(settings)
     if success:
         print("\n✓ Subtitle generation completed successfully!")
-        print(f"Output files saved to: $output_dir")
+        print(f"Output files saved to: {output_dir}")
         
         # List generated files
-        for file in Path('$output_dir').glob('*'):
+        for file in Path(output_dir).glob('*'):
             print(f"  - {file.name}")
+        
+        sys.exit(0)
     else:
         print("\n✗ Subtitle generation failed")
         sys.exit(1)
 except Exception as e:
     print(f"\n✗ Error: {str(e)}")
+    import traceback
+    traceback.print_exc()
     sys.exit(1)
-EOF
+PYEOF
+    
+    # Copy the temporary script to the current directory
+    cp /tmp/subtitle_generator_runner.py .
+    
+    # Run the Python script with environment variables
+    export VIDEO_FILE="$video_file"
+    export TARGET_LANG="$target_lang"
+    export HINDI_METHOD="$hindi_method"
+    export OUTPUT_DIR="$output_dir"
+    
+    # Run in non-interactive mode
+    python3 subtitle_generator_runner.py </dev/null
+    
+    # Capture exit code
+    local exit_code=$?
+    
+    # Clean up temporary file
+    rm -f subtitle_generator_runner.py
+    rm -f /tmp/subtitle_generator_runner.py
     
     # Check if successful
-    if [ $? -eq 0 ]; then
+    if [ $exit_code -eq 0 ]; then
         print_success "Subtitle generation completed!"
         print_status "Files saved to: $output_dir"
         
         # List generated files
         echo -e "\n${GREEN}Generated files:${NC}"
-        ls -la "$output_dir" | grep -E "\.(srt|vtt|mp4)$" | awk '{print "  • " $9}'
+        ls -la "$output_dir" 2>/dev/null | grep -E "\.(srt|vtt|mp4)$" | awk '{print "  • " $9}'
         
         # Offer to play with subtitles (optional)
         echo -e "\n${YELLOW}To play video with subtitles:${NC}"
-        echo "  mpv \"$video_file\" --sub-file=\"$output_dir/$(basename "$video_file" .${video_file##*.})_subtitles.srt\""
+        local video_basename=$(basename "$video_file" .${video_file##*.})
+        echo "  mpv \"$video_file\" --sub-file=\"$output_dir/${video_basename}_subtitles.srt\""
         echo "  or"
-        echo "  vlc \"$video_file\" --sub-file=\"$output_dir/$(basename "$video_file" .${video_file##*.})_subtitles.srt\""
+        echo "  vlc \"$video_file\" --sub-file=\"$output_dir/${video_basename}_subtitles.srt\""
+        
+        # Show how to open output folder
+        echo -e "\n${YELLOW}To open output folder:${NC}"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "  open \"$output_dir\""
+        else
+            echo "  xdg-open \"$output_dir\""
+        fi
     else
         print_error "Subtitle generation failed. Check logs for details."
         exit 1
