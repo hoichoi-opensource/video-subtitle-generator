@@ -91,7 +91,8 @@ and translations. Your task is to generate well-formatted subtitles that are:
 2. Properly synchronized with the video
 3. Translated naturally while preserving meaning
 4. Formatted correctly in the requested subtitle format
-5. Easy to read with appropriate line breaks and timing"""
+5. Easy to read with appropriate line breaks and timing
+IMPORTANT: When translating, output ONLY the target language text, never include both languages."""
     
     def _get_prompt(self, source_lang: str, target_lang: str, translation_method: str = "direct") -> str:
         """Generate prompt for subtitle generation with specific translation methods."""
@@ -103,7 +104,7 @@ and translations. Your task is to generate well-formatted subtitles that are:
 INSTRUCTIONS:
 - First, transcribe all spoken dialogue accurately in the original language
 - Then translate to English maintaining natural flow
-- Keep English subtitles for later Hindi translation
+- IMPORTANT: Output ONLY English text in the subtitles, do NOT include the original language
 - Include relevant sound effects in square brackets [like this]
 - Break long sentences into readable chunks (max 42 characters per line)
 - Ensure proper synchronization with speech timing
@@ -113,34 +114,48 @@ OUTPUT FORMAT:
 ```srt
 1
 00:00:00,000 --> 00:00:03,450
-First subtitle line in English
+First subtitle line in English only
 
 2
 00:00:03,500 --> 00:00:07,200
-Second subtitle line in English
+Second subtitle line in English only
 can span multiple lines
 ```
 
-Generate complete English subtitles first:"""
+Generate complete English-only subtitles:"""
         
         # Standard prompt for direct translation
         lang_instruction = ""
+        output_language = ""
+        
         if source_lang != 'auto':
             lang_instruction = f"The audio is in {source_lang}. "
         
-        if target_lang != source_lang:
-            if target_lang == 'hi':
-                lang_instruction += "Translate directly to Hindi (हिन्दी)."
-            elif target_lang == 'bn':
-                lang_instruction += "Translate to Bengali (বাংলা)."
-            else:
-                lang_instruction += f"Translate to {target_lang}."
+        if target_lang == 'en':
+            output_language = "English"
+            lang_instruction += "Translate all dialogue to English."
+        elif target_lang == 'hi':
+            output_language = "Hindi (हिन्दी)"
+            lang_instruction += "Translate all dialogue directly to Hindi (हिन्दी)."
+        elif target_lang == 'bn':
+            output_language = "Bengali (বাংলা)"
+            lang_instruction += "Translate all dialogue to Bengali (বাংলা)."
+        else:
+            output_language = target_lang
+            lang_instruction += f"Translate all dialogue to {target_lang}."
+        
+        # If source and target are the same, just transcribe
+        if source_lang == target_lang:
+            lang_instruction = f"Transcribe all dialogue in {output_language}."
         
         return f"""Generate subtitles for the provided video.
 
 INSTRUCTIONS:
 - Transcribe all spoken dialogue accurately
 - {lang_instruction}
+- CRITICAL: Output ONLY {output_language} text in the subtitles
+- Do NOT include the original language text alongside the translation
+- Do NOT show both languages - only show {output_language}
 - Use natural, conversational translation that preserves meaning
 - Include relevant sound effects in square brackets [like this]
 - Break long sentences into readable chunks (max 42 characters per line)
@@ -148,23 +163,25 @@ INSTRUCTIONS:
 - Maintain exact timestamp sync with the audio
 - Format: SRT with timestamps in hh:mm:ss,mmm --> hh:mm:ss,mmm
 
+IMPORTANT REMINDER: Each subtitle entry should contain ONLY the {output_language} text, never both languages.
+
 OUTPUT FORMAT:
 ```srt
 1
 00:00:00,000 --> 00:00:03,450
-First subtitle line here
+Subtitle text only in {output_language}
 
 2
 00:00:03,500 --> 00:00:07,200
-Second subtitle line
+Another subtitle only in {output_language}
 can span multiple lines
 
 3
 00:00:07,250 --> 00:00:10,000
-[Sound effect] Dialogue here
+[Sound effect] Dialogue only in {output_language}
 ```
 
-Generate complete, properly formatted SRT subtitles:"""
+Generate complete, properly formatted SRT subtitles with ONLY {output_language} text:"""
     
     def _upload_chunk_to_gcs(self, chunk_path: Path) -> str:
         """Upload chunk to GCS and return URI."""
@@ -232,6 +249,9 @@ Generate complete, properly formatted SRT subtitles:"""
                 # Extract SRT content
                 srt_content = self._extract_srt_content(response.text)
                 
+                # Clean bilingual subtitles if needed
+                srt_content = self._clean_bilingual_subtitles(srt_content, target_lang)
+                
                 # Parse and validate SRT
                 subtitles = self._parse_srt(srt_content)
                 
@@ -259,7 +279,8 @@ Generate complete, properly formatted SRT subtitles:"""
             
             # Create translation prompt
             texts_to_translate = [sub['text'] for sub in batch]
-            prompt = f"""Translate the following English subtitles to Hindi (हिन्दी):
+            prompt = f"""Translate the following English subtitles to Hindi (हिन्दी).
+Output ONLY the Hindi translations, do NOT include the English text:
 
 {chr(10).join(f"{j+1}. {text}" for j, text in enumerate(texts_to_translate))}
 
@@ -269,6 +290,7 @@ INSTRUCTIONS:
 - Keep [sound effects] in English within square brackets
 - Use Devanagari script for Hindi text
 - Maintain the same numbering
+- Output ONLY Hindi text, no English
 
 Provide only the Hindi translations in the same numbered format:"""
             
@@ -333,6 +355,59 @@ Provide only the Hindi translations in the same numbered format:"""
                 srt_lines.append('')
         
         return '\n'.join(srt_lines)
+    
+    def _clean_bilingual_subtitles(self, srt_content: str, target_lang: str) -> str:
+        """Remove bilingual text if AI included both languages."""
+        lines = srt_content.strip().split('\n')
+        cleaned_lines = []
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Keep index lines
+            if re.match(r'^\d+$', line):
+                cleaned_lines.append(line)
+                i += 1
+                continue
+            
+            # Keep timestamp lines
+            if '-->' in line:
+                cleaned_lines.append(line)
+                i += 1
+                continue
+            
+            # Process subtitle text lines
+            if line:
+                # For English target, remove Bengali text
+                if target_lang == 'en':
+                    # Check if line contains Bengali characters
+                    if any('\u0980' <= char <= '\u09FF' for char in line):
+                        # This line contains Bengali
+                        # Check if next line might be the English translation
+                        if i + 1 < len(lines) and lines[i + 1].strip():
+                            next_line = lines[i + 1].strip()
+                            # If next line doesn't contain Bengali, it's probably English
+                            if not any('\u0980' <= char <= '\u09FF' for char in next_line):
+                                cleaned_lines.append(next_line)
+                                i += 2  # Skip both lines
+                                continue
+                        # Skip this Bengali line
+                        i += 1
+                        continue
+                    else:
+                        # Pure English line, keep it
+                        cleaned_lines.append(line)
+                else:
+                    # For other languages, keep the line
+                    cleaned_lines.append(line)
+            else:
+                # Empty line
+                cleaned_lines.append(line)
+            
+            i += 1
+        
+        return '\n'.join(cleaned_lines)
     
     def _parse_srt(self, srt_content: str) -> List[Dict[str, Any]]:
         """Parse SRT content into structured format."""
