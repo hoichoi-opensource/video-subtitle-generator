@@ -22,13 +22,15 @@ storage:
   subtitles_prefix: "subtitles"
   output_prefix: "output-videos"
 
+
 # Processing Configuration
 processing:
   chunk_duration: 60  # seconds
   max_parallel_workers: 5
   retry_attempts: 3
   retry_delay: 5  # seconds
-  cleanup_temp_files: true
+  cleanup_temp_files: true      # Clean up local temp files
+  cleanup_gcs_chunks: true      # Clean up chunks from GCS after processing
   
 # Subtitle Configuration
 subtitles:
