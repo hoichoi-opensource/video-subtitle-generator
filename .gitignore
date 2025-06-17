@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Credentials
+credentials/
+*.json
+!config.yaml.example
+
+# Media files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.srt
+*.vtt
+*.ass
+
+# Directories
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+logs/*
+!logs/.gitkeep
+temp/*
+!temp/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
