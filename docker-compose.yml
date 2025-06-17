@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  subtitle-generator:
+    build: .
+    container_name: subtitle-generator
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-./credentials.json}:/app/credentials.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+      - PYTHONUNBUFFERED=1
+      - VIDEO_FILE=${VIDEO_FILE}
+      - TARGET_LANG=${TARGET_LANG}
+      - HINDI_METHOD=${HINDI_METHOD:-direct}
+    stdin_open: true
+    tty: true
+    command: ${COMMAND:-}
