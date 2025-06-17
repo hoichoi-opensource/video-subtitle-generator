@@ -1,7 +1,7 @@
 # Core dependencies
 google-cloud-storage==2.10.0
-google-cloud-aiplatform==1.38.0
-vertexai==1.38.0
+google-cloud-aiplatform
+vertexai
 ffmpeg-python==0.2.0
 PyYAML==6.0.1
 tqdm==4.66.1
