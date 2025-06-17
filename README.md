@@ -21,8 +21,8 @@ A production-ready video subtitle generation system that uses Google's Vertex AI
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/video-subtitle-system.git
-   cd video-subtitle-system
+   git clone https://github.com//hoichoi-opensource/Video-subtitle-Generator.git
+   cd Video-subtitle-Generator
    ```
 
 2. **Run the installer**
