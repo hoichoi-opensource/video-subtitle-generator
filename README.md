@@ -1,117 +1,145 @@
-# Video Subtitle Generator
+# Video Subtitle Generation System
 
-A production-ready, automated video subtitle generation system using Google Vertex AI with support for English, Hindi, and Bengali languages.
+A production-ready video subtitle generation system that uses Google's Vertex AI (Gemini) to automatically generate accurate subtitles for videos in multiple languages.
 
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Docker](https://img.shields.io/badge/docker-ready-blue)](Dockerfile)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Python](https://img.shields.io/badge/python-3.8+-green)
+![License](https://img.shields.io/badge/license-MIT-orange)
 
-## 🌟 Features
+## Features
 
-- 🎬 **Automatic Video Processing**: Smart chunking for efficient processing
-- 🤖 **AI-Powered Transcription**: Using Google's Gemini model
-- 🌍 **Multi-Language Support**: English, Hindi, and Bengali
-- 🔄 **Hindi Translation Methods**: Direct translation or via English
-- ⚡ **Parallel Processing**: Fast processing with configurable workers
-- 🐳 **Docker Support**: Includes ffmpeg for containerized deployment
-- 🖥️ **Linux Optimized**: Bash script for easy Linux automation
-- 🔒 **Secure Configuration**: Centralized secrets management
+- 🎬 **Automatic Subtitle Generation**: Uses Vertex AI's Gemini model for accurate transcription
+- 🌐 **Multi-language Support**: English, Hindi, and Bengali
+- 📊 **Real-time Progress Tracking**: Visual stage-by-stage progress display
+- 🔄 **Resume Capability**: Resume failed jobs from any stage
+- 📁 **Batch Processing**: Process multiple videos at once
+- ☁️ **Google Cloud Integration**: Seamless GCS and Vertex AI integration
+- 🎨 **Interactive CLI**: Colorful, user-friendly command-line interface
+- 📈 **Performance Optimized**: Chunk-based processing for large videos
 
-## 📋 Language Support
+## Quick Start
 
-- **English (en)**: Direct transcription and translation
-- **Hindi (hi)**: Two methods available:
-  - Direct: Bengali/source → Hindi
-  - Via English: Bengali/source → English → Hindi
-- **Bengali (bn)**: Direct transcription and translation
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/video-subtitle-system.git
+   cd video-subtitle-system
+   ```
 
-## 🚀 Quick Start
+2. **Run the installer**
+   ```bash
+   chmod +x install.sh
+   ./install.sh
+   ```
 
-### Linux Users (Recommended)
+3. **Set up Google Cloud credentials**
+   - Create a Google Cloud project
+   - Enable Vertex AI and Cloud Storage APIs
+   - Create a service account and download the JSON key
+   - Place it in `credentials/service-account.json`
+
+4. **Configure the system**
+   - Edit `config/config.yaml` with your settings
+
+5. **Start processing**
+   ```bash
+   ./videosub.sh
+   ```
+
+## System Requirements
+
+- Python 3.8 or higher
+- FFmpeg
+- Google Cloud account with billing enabled
+- Sufficient disk space for video processing
+
+## Supported Video Formats
+
+- MP4, AVI, MKV, MOV, WMV, FLV, WEBM
+
+## Documentation
+
+- [Installation Guide](INSTALLATION.md) - Detailed installation instructions
+- [Configuration Guide](CONFIGURATION.md) - Configuration options
+- [Usage Guide](USAGE.md) - How to use the system
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues and solutions
+
+## Project Structure
+
+```
+video-subtitle-system/
+├── input/              # Place your video files here
+├── output/             # Generated subtitles and processed videos
+├── scripts/            # Python modules
+├── config/             # Configuration files
+├── credentials/        # Google Cloud credentials
+├── videosub.sh         # Main interactive script
+└── install.sh          # Installation script
+```
+
+## Processing Stages
+
+The system processes videos through 10 clearly defined stages:
+
+1. **Validating Input File** - Checks video format and integrity
+2. **Analyzing Video** - Extracts metadata and calculates chunks
+3. **Creating Video Chunks** - Splits video into manageable segments
+4. **Connecting to Google Cloud** - Establishes GCS connection
+5. **Uploading Chunks to GCS** - Transfers chunks to cloud storage
+6. **Initializing Vertex AI** - Prepares the AI model
+7. **Generating Subtitles** - Creates subtitles for each chunk
+8. **Downloading Subtitles** - Retrieves generated subtitles
+9. **Merging Subtitles** - Combines all chunks into final subtitle
+10. **Finalizing Output** - Cleanup and format conversion
+
+## Configuration
+
+The system uses `gemini-2.5-pro-preview-05-06` as the default AI model. Key configuration options:
+
+- **Chunk Duration**: Configurable video segment length (default: 60s)
+- **Output Formats**: SRT and VTT subtitle formats
+- **Languages**: English, Hindi, Bengali (expandable)
+- **Parallel Processing**: Configurable worker count
+
+## Usage Examples
+
+### Single Video Processing
 ```bash
-# Make scripts executable
-chmod +x subtitle_generator.sh
-
-# Configure
-cp config.yaml.example config.yaml
-# Edit config.yaml with your Google Cloud settings
-
-# Run
-./subtitle_generator.sh video.mp4 hi direct
+./videosub.sh
+# Select option 1 (Process Video)
+# Choose your video and language
 ```
 
-### Docker Users
+### Batch Processing
 ```bash
-# Build and run
-docker build -t subtitle-generator .
-./docker_run.sh video.mp4 en
+./videosub.sh
+# Select option 2 (Batch Process)
+# Specify directory and language
 ```
 
-## 📖 Documentation
-
-- [Installation Guide](docs/INSTALLATION.md)
-- [Usage Guide](docs/USAGE.md)
-- [API Documentation](docs/API.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-
-## 🛠️ Prerequisites
-
-- Python 3.9+ OR Docker
-- FFmpeg (included in Docker image)
-- Google Cloud Project with Vertex AI API enabled
-- Service account with appropriate permissions
-
-## 💻 Usage Examples
-
-### Bash Script (Linux)
+### Check Job Status
 ```bash
-# English subtitles
-./subtitle_generator.sh video.mp4 en
-
-# Hindi subtitles (direct)
-./subtitle_generator.sh video.mp4 hi direct
-
-# Hindi subtitles (via English)
-./subtitle_generator.sh video.mp4 hi via_english
-
-# Bengali subtitles
-./subtitle_generator.sh video.mp4 bn
+./videosub.sh
+# Select option 3 (Check Status)
+# Enter job ID or 'list' to see recent jobs
 ```
 
-### Docker
-```bash
-# Interactive mode
-./docker_run.sh
+## Contributing
 
-# Batch mode
-./docker_run.sh video.mp4 hi via_english
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Python
-```bash
-# Interactive mode
-python main.py
+## License
 
-# Command line mode
-python main.py --video video.mp4 --lang hi --method via_english
-```
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🔧 Configuration
+## Acknowledgments
 
-```yaml
-gcp:
-  project_id: "your-project-id"
-  location: "us-central1"
+- Google Cloud Vertex AI team for the excellent Gemini model
+- FFmpeg community for video processing capabilities
+- Open source contributors
 
-subtitles:
-  supported_languages: ["en", "hi", "bn"]
-  hindi_translation_method: "direct"  # or "via_english"
-```
+## Support
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Made with ❤️ for the video subtitle community**
+For issues and questions:
+- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) first
+- Open an issue on GitHub
+- Contact support at support@example.com
