@@ -1,28 +1,20 @@
 # Core dependencies
-google-cloud-storage==2.10.0
-google-cloud-aiplatform
-vertexai
 ffmpeg-python==0.2.0
 PyYAML==6.0.1
-tqdm==4.66.1
-colorama==0.4.6
-rich==13.7.0
 click==8.1.7
+rich==13.7.0
 
-# Video processing
-opencv-python==4.8.1.78
-moviepy==1.0.3
-Pillow==10.1.0
+# Google Cloud dependencies
+google-cloud-storage==2.14.0
+google-cloud-aiplatform==1.40.0
+google-auth==2.26.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
 
-# Utilities
+# Utility dependencies
 python-dotenv==1.0.0
 requests==2.31.0
-tenacity==8.2.3
-pydantic==2.5.2
-humanize==4.8.0
+urllib3==2.1.0
 
-# Development
-pytest==7.4.3
-black==23.11.0
-flake8==6.1.0
-pre-commit==3.5.0
+# Type hints support
+typing-extensions==4.9.0

@@ -1,0 +1,12 @@
+prompt: |
+  Generate Bengali SDH subtitles from the audio.
+
+  INSTRUCTIONS:
+  - Include all dialogue in Bengali script
+  - Add sound effects in square brackets: [দরজা বন্ধ হওয়া], [পায়ের শব্দ]
+  - Include music descriptions: [উৎসাহব্যঞ্জক সঙ্গীত], [নাটকীয় সঙ্গীত]
+  - Add speaker identification: বর্ণনাকারী:, পুরুষ:, মহিলা:
+  - Include non-verbal sounds: [দীর্ঘশ্বাস], [হাসি], [কাশি]
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+
+  Provide ONLY the SRT formatted subtitles, no additional text.

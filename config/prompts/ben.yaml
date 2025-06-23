@@ -1,0 +1,9 @@
+prompt: |
+  Generate Bengali subtitles from the audio.
+
+  INSTRUCTIONS:
+  - Transcribe the Bengali audio accurately
+  - Use Bengali script
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+
+  Provide ONLY the SRT formatted subtitles in Bengali, no additional text.

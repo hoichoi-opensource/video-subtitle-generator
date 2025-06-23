@@ -1,0 +1,12 @@
+prompt: |
+  Generate SDH subtitles for the provided video (translated to English).
+
+  INSTRUCTIONS:
+  - Include all dialogue translated to English
+  - Add sound effects in square brackets: [door slams], [footsteps]
+  - Include music descriptions: [upbeat music], [dramatic music]
+  - Add speaker identification when unclear: NARRATOR:, MAN:, WOMAN:
+  - Include non-verbal sounds: [sighs], [laughs], [coughs]
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+
+  Provide ONLY the SRT formatted subtitles, no additional text.

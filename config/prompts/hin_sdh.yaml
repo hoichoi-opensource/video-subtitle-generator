@@ -1,0 +1,12 @@
+prompt: |
+  Generate Hindi SDH subtitles from Bengali audio.
+
+  INSTRUCTIONS:
+  - Include all dialogue in Hindi (Devanagari script)
+  - Add sound effects in square brackets: [दरवाज़ा बंद होना], [कदमों की आवाज़]
+  - Include music descriptions: [उत्साहजनक संगीत], [नाटकीय संगीत]
+  - Add speaker identification: वर्णनकर्ता:, पुरुष:, महिला:
+  - Include non-verbal sounds: [आह भरना], [हंसना], [खांसना]
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+
+  Provide ONLY the SRT formatted subtitles, no additional text.

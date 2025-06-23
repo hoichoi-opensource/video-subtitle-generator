@@ -1,0 +1,31 @@
+prompt: |
+  Generate subtitles for the provided video.
+
+  INSTRUCTIONS: 
+  - The subtitles should be Translated to English.
+  - The subtitles should be in SRT format.
+  - The subtitles should be accurate and match the video content.
+  - The subtitles should be easy to read and understand.
+  - The subtitles should be synchronized with the video.
+  - Cover the entire duration of the video chunk from start to end.
+  - Timestamps are strictly in the format: `hh:mm:ss,mmm --> hh:mm:ss,mmm`
+
+  FORMAT: 
+  ```srt
+  hh:mm:ss,mmm --> hh:mm:ss,mmm
+  Subtitle text here
+  ```
+
+  EXAMPLE: 
+  ```srt
+  1
+  00:00:00,123 --> 00:00:05,456
+  Subtitle text here
+  2
+  00:00:07,204 --> 00:00:10,820
+  Subtitle text here
+  ...
+  n
+  hh:mm:ss,mmm --> hh:mm:ss,mmm
+  Subtitle text here
+  ```

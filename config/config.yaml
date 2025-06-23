@@ -1,0 +1,88 @@
+# Video Subtitle Generator Configuration
+
+# Application settings
+app:
+  name: "Video Subtitle Generator"
+  version: "1.0.0"
+  output_dir: "output"
+  temp_dir: "temp"
+  jobs_dir: "jobs"
+  logs_dir: "logs"
+
+# Google Cloud Platform settings
+gcp:
+  # Your GCP project ID
+  project_id: "content-subtitling"
+  
+  # GCP region for Vertex AI
+  location: "us-central1"
+  
+  # Authentication method: "service_account" or "adc"
+  auth_method: "service_account"
+  
+  # Path to service account JSON file
+  service_account_path: "./service-account.json"
+  
+  # Bucket configuration
+  bucket_mode: "create_new"
+  existing_bucket_name: "subtitleinput"
+
+# Vertex AI settings
+vertex_ai:
+  # Model to use for subtitle generation
+  default_model: "gemini-2.5-pro-preview-05-06"
+  
+  # Generation parameters
+  temperature: 0.2
+  top_p: 0.95
+  max_output_tokens: 8192
+  
+  # Safety settings - matching reference code
+  safety_settings:
+    - category: "HARM_CATEGORY_HATE_SPEECH"
+      threshold: "OFF"
+    - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
+      threshold: "OFF"
+    - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+      threshold: "OFF"
+    - category: "HARM_CATEGORY_HARASSMENT"
+      threshold: "OFF"
+
+# Processing settings
+processing:
+  chunk_duration: 60
+  parallel_workers: 4
+  max_retries: 3
+  retry_delay: 5
+  timing_offset_ms: 0
+  keep_temp_files: false
+  keep_gcs_data: false
+
+# Language settings
+languages:
+  source: "ben"
+  subtitles:
+    available:
+      eng:
+        name: "English"
+        method: "transcribe"
+        default: true
+      hin:
+        name: "Hindi"
+        method: "dual"
+        default: false
+      ben:
+        name: "Bengali"
+        method: "transcribe"
+        default: false
+
+# System settings
+system:
+  supported_video_formats:
+    - "mp4"
+    - "avi"
+    - "mkv"
+    - "mov"
+    - "webm"
+  max_file_size_gb: 10
+  log_level: "INFO"

@@ -1,0 +1,11 @@
+prompt: |
+  Generate Hindi subtitles using translation method.
+
+  INSTRUCTIONS:
+  - First transcribe the Bengali audio
+  - Translate to English
+  - Then translate English to Hindi
+  - Use Devanagari script for Hindi
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+
+  Provide ONLY the SRT formatted subtitles in Hindi, no additional text.
