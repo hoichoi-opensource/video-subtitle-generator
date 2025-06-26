@@ -50,11 +50,12 @@ class AIGenerator:
             # Initialize Vertex AI Generative Model for REAL AI transcription
             # This uses actual Google Gemini AI for video-to-subtitle generation
             try:
-                from vertexai.preview.generative_models import GenerativeModel, Part, SafetySetting
+                from vertexai.preview.generative_models import GenerativeModel, Part, HarmCategory, HarmBlockThreshold
                 
                 self.model = GenerativeModel(model_name)
                 self.Part = Part
-                self.SafetySetting = SafetySetting
+                self.HarmCategory = HarmCategory
+                self.HarmBlockThreshold = HarmBlockThreshold
                 self.system_instruction = system_instruction
                 console.print("✅ Vertex AI Gemini model initialized successfully for REAL transcription")
                 
@@ -283,26 +284,26 @@ class AIGenerator:
             return results.get('translate')
             
     def _get_safety_settings(self) -> List:
-        """Get safety settings for AI generation - following reference implementation"""
+        """Get safety settings for AI generation - using current API structure"""
         try:
-            # Use SafetySetting objects like in the reference code
+            # Use the current API structure with HarmCategory and HarmBlockThreshold
             safety_settings = [
-                self.SafetySetting(
-                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
-                ),
-                self.SafetySetting(
-                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
-                ),
-                self.SafetySetting(
-                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
-                ),
-                self.SafetySetting(
-                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
-                ),
+                {
+                    "category": self.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    "category": self.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    "category": self.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    "category": self.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
+                },
             ]
             return safety_settings
             

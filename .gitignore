@@ -36,13 +36,29 @@ logs/*
 temp/*
 !temp/.gitkeep
 
-# IDE
+# IDE and development tools
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+.claude/
+
+# Analysis and testing files
+*_ANALYSIS.md
+*_REPORT.md
+*_analysis_*.py
+*_test_*.py
+critical_*.py
+debug_*.py
+error_*.py
+simple_*.py
+test_*.py
 
 # Environment
 .env
 .env.local
+
+# Job state (can be regenerated)
+jobs/*.json
+!jobs/.gitkeep
