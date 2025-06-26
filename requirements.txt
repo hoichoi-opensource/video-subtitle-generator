@@ -1,21 +1,67 @@
 # Core dependencies
 ffmpeg-python==0.2.0
-PyYAML==6.0.1
-click==8.1.7
-rich==13.7.0
+PyYAML==6.0.2
+click==8.2.1
+rich==14.0.0
 
 # Google Cloud dependencies
-google-cloud-storage==2.14.0
+google-cloud-storage==2.19.0
 google-cloud-aiplatform==1.40.0
-google-generativeai==0.4.0
-google-auth==2.26.2
-google-auth-oauthlib==1.2.0
+google-auth==2.40.3
+google-auth-oauthlib==1.2.2
 google-auth-httplib2==0.2.0
 
+# Additional Google Cloud components (installed automatically with aiplatform)
+google-cloud-bigquery==3.34.0
+google-cloud-core==2.4.3
+google-cloud-resource-manager==1.14.2
+google-api-core==2.25.1
+google-resumable-media==2.7.2
+googleapis-common-protos==1.70.0
+
+# gRPC dependencies
+grpcio==1.73.1
+grpcio-status==1.62.3
+grpc-google-iam-v1==0.14.2
+
+# Protocol Buffers
+protobuf==4.25.8
+proto-plus==1.26.1
+
 # Utility dependencies
-python-dotenv==1.0.0
-requests==2.31.0
-urllib3==2.1.0
+python-dotenv==1.1.1
+requests==2.32.4
+urllib3==2.5.0
+setuptools==80.9.0
+
+# Authentication and security
+cachetools==5.5.2
+certifi==2025.6.15
+pyasn1==0.6.1
+pyasn1-modules==0.4.2
+rsa==4.9.1
+oauthlib==3.3.1
+requests-oauthlib==2.0.0
+
+# Text processing and formatting
+charset-normalizer==3.4.2
+idna==3.10
+markdown-it-py==3.0.0
+mdurl==0.1.2
+Pygments==2.19.2
+
+# Math and data processing
+numpy==2.3.1
+shapely==2.1.1
+
+# Utilities
+packaging==25.0
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+six==1.17.0
+future==1.0.0
+httplib2==0.22.0
+google-crc32c==1.7.1
 
 # Type hints support
-typing-extensions==4.9.0
+typing-extensions==4.14.0

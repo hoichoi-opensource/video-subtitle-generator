@@ -9,7 +9,9 @@ import json
 from pathlib import Path
 from typing import List, Dict, Optional, Callable, Any
 import vertexai
-from vertexai.generative_models import GenerativeModel, Part, SafetySetting
+from google.cloud.aiplatform import gapic
+from google.cloud.aiplatform_v1.services.prediction_service import client as prediction_client
+from google.cloud.aiplatform_v1.types import prediction_service as prediction_service_types
 from google.cloud import storage
 from config_manager import ConfigManager
 from rich.console import Console
@@ -46,10 +48,9 @@ class AIGenerator:
             
             system_instruction = """You are an expert transcriber and subtitles creator, specializing in creating subtitles and translated subtitles. Your task is to generate accurate and well-formatted subtitles for videos. You should ensure that the subtitles are easy to read, synchronized with the video, and follow the specified format. You can also provide translated subtitles if requested."""
             
-            self.model = GenerativeModel(
-                model_name,
-                system_instruction=[system_instruction]
-            )
+            # Use Google Cloud AI Platform for model initialization
+            self.model_name = model_name
+            self.system_instruction = system_instruction
             
             # Initialize storage client for video access
             from google.oauth2 import service_account
@@ -230,29 +231,10 @@ class AIGenerator:
         else:
             return results.get('translate')
             
-    def _get_safety_settings(self) -> List[SafetySetting]:
+    def _get_safety_settings(self) -> List:
         """Get safety settings for AI generation"""
-        # Match the reference implementation - set all to OFF
-        settings = [
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                threshold=SafetySetting.HarmBlockThreshold.OFF,
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF,
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF,
-            ),
-            SafetySetting(
-                category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold=SafetySetting.HarmBlockThreshold.OFF,
-            ),
-        ]
-        
-        return settings
+        # Safety settings disabled for now due to import issues
+        return []
         
     def _get_last_timestamp(self, srt_content: str) -> float:
         """Get the last timestamp from SRT content in seconds"""

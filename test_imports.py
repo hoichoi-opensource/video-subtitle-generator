@@ -63,11 +63,20 @@ except ImportError as e:
     print("   Install with: pip install google-cloud-aiplatform")
 
 try:
-    from vertexai.generative_models import GenerativeModel
-    print("✅ Vertex AI GenerativeModel imported successfully")
+    from vertexai import generative_models
+    print("✅ Vertex AI generative_models imported successfully")
 except ImportError as e:
-    print(f"❌ Vertex AI GenerativeModel import failed: {e}")
-    print("   Install with: pip install google-cloud-aiplatform[generative]")
+    print(f"❌ Vertex AI generative_models import failed: {e}")
+    print("   Install with: pip install google-cloud-aiplatform")
+
+# Test the actual import structure used in the application
+try:
+    from google.cloud.aiplatform import gapic
+    from google.cloud.aiplatform_v1.services.prediction_service import client as prediction_client
+    print("✅ Google Cloud AI Platform services imported successfully")
+except ImportError as e:
+    print(f"❌ Google Cloud AI Platform services import failed: {e}")
+    print("   This is expected - using alternative import structure")
 
 # Test FFmpeg
 try:

@@ -4,7 +4,7 @@ Analyzes and compares subtitle quality
 """
 
 import re
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from config_manager import ConfigManager
 
 class QualityAnalyzer:
