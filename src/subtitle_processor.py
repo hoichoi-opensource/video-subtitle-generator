@@ -76,8 +76,21 @@ class SubtitleProcessor:
         """Display main menu and handle selection"""
         self.display_banner()
         
+        # Show input folder status
+        input_dir = Path("input")
+        video_files = []
+        supported_formats = self.config.get('system.supported_video_formats', ['mp4', 'avi', 'mkv', 'mov', 'webm'])
+        for ext in supported_formats:
+            video_files.extend(input_dir.glob(f"*.{ext}"))
+            video_files.extend(input_dir.glob(f"*.{ext.upper()}"))
+        
+        if video_files:
+            console.print(f"\n[green]✅ Found {len(video_files)} video file(s) in input folder[/green]")
+        else:
+            console.print(f"\n[yellow]📁 No videos in input folder ({input_dir.absolute()})[/yellow]")
+        
         table = Table(show_header=False, box=None)
-        table.add_row("[bold]1[/bold]", "Process Single Video")
+        table.add_row("[bold]1[/bold]", "Process Single Video" + (" [dim](select from input folder)[/dim]" if video_files else ""))
         table.add_row("[bold]2[/bold]", "Batch Process Videos")
         table.add_row("[bold]3[/bold]", "Resume Previous Job")
         table.add_row("[bold]4[/bold]", "View Job History")
@@ -86,7 +99,7 @@ class SubtitleProcessor:
         console.print("\n[bold]Select an option:[/bold]")
         console.print(table)
         
-        choice = Prompt.ask("\nEnter your choice", choices=["1", "2", "3", "4", "5"])
+        choice = Prompt.ask("\nEnter your choice", choices=["1", "2", "3", "4", "5"], default="1")
         
         if choice == "1":
             self.process_single_video()
@@ -107,25 +120,36 @@ class SubtitleProcessor:
             input_dir = Path("input")
             input_dir.mkdir(exist_ok=True)
             
+            console.print(f"\n[dim]Checking for videos in: {input_dir.absolute()}[/dim]")
+            
             # List available videos in input directory
             video_files = []
-            for ext in self.config.get('system.supported_video_formats', []):
+            supported_formats = self.config.get('system.supported_video_formats', ['mp4', 'avi', 'mkv', 'mov', 'webm'])
+            
+            for ext in supported_formats:
                 video_files.extend(input_dir.glob(f"*.{ext}"))
                 video_files.extend(input_dir.glob(f"*.{ext.upper()}"))
+            
+            console.print(f"[dim]Found {len(video_files)} video files[/dim]")
             
             if video_files:
                 console.print("\n[cyan]Available videos in input folder:[/cyan]")
                 for i, vf in enumerate(video_files, 1):
-                    console.print(f"  [{i}] {vf.name}")
+                    file_size = vf.stat().st_size / (1024**2)  # Size in MB
+                    console.print(f"  [{i}] {vf.name} ({file_size:.1f} MB)")
                 console.print(f"  [0] Enter custom path")
                 
-                choice = Prompt.ask("\nSelect video or enter 0 for custom path")
+                choice = Prompt.ask("\nSelect video or enter 0 for custom path", default="1")
                 if choice.isdigit() and 1 <= int(choice) <= len(video_files):
                     video_path = str(video_files[int(choice) - 1])
+                    console.print(f"[green]Selected: {Path(video_path).name}[/green]")
                 else:
                     video_path = Prompt.ask("Enter video path")
             else:
-                video_path = Prompt.ask("📹 Enter video path")
+                console.print(f"\n[yellow]No video files found in input folder.[/yellow]")
+                console.print(f"[yellow]Supported formats: {', '.join(supported_formats)}[/yellow]")
+                console.print(f"[yellow]Please add video files to: {input_dir.absolute()}[/yellow]")
+                video_path = Prompt.ask("📹 Or enter video path directly")
         
         # Resolve path
         video_path = Path(video_path).resolve()

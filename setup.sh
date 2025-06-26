@@ -64,6 +64,10 @@ python3 -m pip install --upgrade pip
 echo -e "\n📌 Installing requirements..."
 pip install -r requirements.txt
 
+# Install additional vertex AI dependencies
+echo -e "\n📌 Installing Vertex AI SDK..."
+pip install google-cloud-aiplatform[generative] google-generativeai
+
 # Create required directories
 echo -e "\n📌 Creating required directories..."
 mkdir -p input output temp jobs logs chunks subtitles

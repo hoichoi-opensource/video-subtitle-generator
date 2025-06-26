@@ -8,10 +8,8 @@ import time
 import json
 from pathlib import Path
 from typing import List, Dict, Optional, Callable, Any
-from google.cloud import aiplatform
-vertexai = aiplatform
-from vertexai.generative_models import GenerativeModel, Part
-from vertexai.generative_models import HarmCategory, HarmBlockThreshold
+import vertexai
+from vertexai.generative_models import GenerativeModel, Part, SafetySetting
 from google.cloud import storage
 from config_manager import ConfigManager
 from rich.console import Console
@@ -232,26 +230,26 @@ class AIGenerator:
         else:
             return results.get('translate')
             
-    def _get_safety_settings(self) -> List[Dict[str, Any]]:
+    def _get_safety_settings(self) -> List[SafetySetting]:
         """Get safety settings for AI generation"""
         # Match the reference implementation - set all to OFF
         settings = [
-            {
-                "category": HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                "threshold": HarmBlockThreshold.OFF,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                "threshold": HarmBlockThreshold.OFF,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                "threshold": HarmBlockThreshold.OFF,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
-                "threshold": HarmBlockThreshold.OFF,
-            },
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=SafetySetting.HarmBlockThreshold.OFF,
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF,
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF,
+            ),
+            SafetySetting(
+                category=SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=SafetySetting.HarmBlockThreshold.OFF,
+            ),
         ]
         
         return settings
