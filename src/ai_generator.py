@@ -9,9 +9,8 @@ import json
 from pathlib import Path
 from typing import List, Dict, Optional, Callable, Any
 import vertexai
+from google.cloud import aiplatform
 from google.cloud.aiplatform import gapic
-from google.cloud.aiplatform_v1.services.prediction_service import client as prediction_client
-from google.cloud.aiplatform_v1.types import prediction_service as prediction_service_types
 from google.cloud import storage
 from config_manager import ConfigManager
 from rich.console import Console
@@ -44,13 +43,27 @@ class AIGenerator:
             vertexai.init(project=self.project_id, location=self.location)
             
             # Initialize model with system instruction
-            model_name = self.config.get('vertex_ai.default_model', 'gemini-1.5-pro-preview-05-06')
+            model_name = self.config.get('vertex_ai.default_model', 'gemini-2.5-pro-preview-05-06')
             
             system_instruction = """You are an expert transcriber and subtitles creator, specializing in creating subtitles and translated subtitles. Your task is to generate accurate and well-formatted subtitles for videos. You should ensure that the subtitles are easy to read, synchronized with the video, and follow the specified format. You can also provide translated subtitles if requested."""
             
-            # Use Google Cloud AI Platform for model initialization
-            self.model_name = model_name
-            self.system_instruction = system_instruction
+            # Initialize Vertex AI Generative Model for REAL AI transcription
+            # This uses actual Google Gemini AI for video-to-subtitle generation
+            try:
+                from vertexai.preview.generative_models import GenerativeModel, Part, SafetySetting
+                
+                self.model = GenerativeModel(model_name)
+                self.Part = Part
+                self.SafetySetting = SafetySetting
+                self.system_instruction = system_instruction
+                console.print("✅ Vertex AI Gemini model initialized successfully for REAL transcription")
+                
+            except ImportError as e:
+                console.print(f"[red]❌ Failed to import Vertex AI components: {e}[/red]")
+                raise RuntimeError("Vertex AI Gemini model is required for transcription")
+            except Exception as e:
+                console.print(f"[red]❌ Failed to initialize Vertex AI model: {e}[/red]")
+                raise RuntimeError(f"Failed to initialize Gemini model: {e}")
             
             # Initialize storage client for video access
             from google.oauth2 import service_account
@@ -151,20 +164,25 @@ class AIGenerator:
         if language == 'hin' and not is_sdh:
             # Generate using both methods and compare
             return self._generate_hindi_subtitle(video_uri, prompt)
-            
-        # Create video part
-        video_part = Part.from_uri(
-            uri=video_uri,
-            mime_type="video/mp4"
-        )
         
-        # Get safety settings
-        safety_settings = self._get_safety_settings()
-        
-        # Generate subtitle
+        # Create video part for Vertex AI
         try:
+            video_part = self.Part.from_uri(
+                uri=video_uri,
+                mime_type="video/mp4"
+            )
+            
+            # Get safety settings
+            safety_settings = self._get_safety_settings()
+            
+            # Generate subtitle using Vertex AI Gemini
+            console.print(f"[blue]      Generating {language} subtitle using Vertex AI Gemini ({'SDH' if is_sdh else 'regular'})[/blue]")
+            
+            # Combine system instruction with user prompt
+            full_prompt = f"{self.system_instruction}\n\n{prompt}"
+            
             response = self.model.generate_content(
-                [video_part, prompt],
+                [video_part, full_prompt],
                 safety_settings=safety_settings,
                 generation_config={
                     "temperature": self.config.get('vertex_ai.temperature', 0.2),
@@ -174,67 +192,123 @@ class AIGenerator:
             )
             
             if response.text:
-                # Clean and validate SRT format
-                return self._clean_srt_content(response.text)
+                # Parse SRT content following reference implementation
+                subtitle_content = self._parse_srt_response(response.text)
+                if subtitle_content:
+                    console.print(f"[green]      Generated subtitle ({len(subtitle_content)} chars)[/green]")
+                    return subtitle_content
+                else:
+                    console.print(f"[yellow]      Warning: Failed to parse SRT from response[/yellow]")
+                    return None
             else:
                 console.print(f"[yellow]      Warning: Empty response from AI[/yellow]")
                 return None
                 
         except Exception as e:
-            console.print(f"[red]      AI generation error: {str(e)}[/red]")
+            console.print(f"[red]      Error generating subtitle with Vertex AI: {str(e)}[/red]")
             return None
+    
             
     def _generate_hindi_subtitle(self, video_uri: str, prompt: str) -> Optional[str]:
         """Generate Hindi subtitle using dual method approach"""
-        # Method 1: Translation approach
-        translate_prompt = self.config.get_prompt('hin', 'translate')
+        console.print(f"[blue]      Generating Hindi subtitle using dual method with Vertex AI[/blue]")
         
-        # Method 2: Direct approach
+        # Get both prompts
+        translate_prompt = self.config.get_prompt('hin', 'translate')
         direct_prompt = self.config.get_prompt('hin', 'direct')
         
         results = {}
         
-        # Try translation method
-        if translate_prompt:
-            try:
-                video_part = Part.from_uri(uri=video_uri, mime_type="video/mp4")
-                response = self.model.generate_content(
-                    [video_part, translate_prompt],
-                    safety_settings=self._get_safety_settings()
-                )
-                if response.text:
-                    results['translate'] = self._clean_srt_content(response.text)
-            except:
-                pass
-                
-        # Try direct method
-        if direct_prompt:
-            try:
-                video_part = Part.from_uri(uri=video_uri, mime_type="video/mp4")
-                response = self.model.generate_content(
-                    [video_part, direct_prompt],
-                    safety_settings=self._get_safety_settings()
-                )
-                if response.text:
-                    results['direct'] = self._clean_srt_content(response.text)
-            except:
-                pass
-                
+        # Create video part
+        try:
+            video_part = self.Part.from_uri(uri=video_uri, mime_type="video/mp4")
+            safety_settings = self._get_safety_settings()
+            
+            # Try translation method
+            if translate_prompt:
+                try:
+                    console.print(f"[blue]        Trying translation method...[/blue]")
+                    full_translate_prompt = f"{self.system_instruction}\n\n{translate_prompt}"
+                    response = self.model.generate_content(
+                        [video_part, full_translate_prompt],
+                        safety_settings=safety_settings,
+                        generation_config={
+                            "temperature": self.config.get('vertex_ai.temperature', 0.2),
+                            "top_p": self.config.get('vertex_ai.top_p', 0.95),
+                            "max_output_tokens": self.config.get('vertex_ai.max_output_tokens', 8192)
+                        }
+                    )
+                    if response.text:
+                        results['translate'] = self._clean_srt_content(response.text)
+                        console.print(f"[green]        Translation method: {len(results['translate'])} chars[/green]")
+                except Exception as e:
+                    console.print(f"[yellow]        Translation method failed: {str(e)}[/yellow]")
+                    
+            # Try direct method
+            if direct_prompt:
+                try:
+                    console.print(f"[blue]        Trying direct method...[/blue]")
+                    full_direct_prompt = f"{self.system_instruction}\n\n{direct_prompt}"
+                    response = self.model.generate_content(
+                        [video_part, full_direct_prompt],
+                        safety_settings=safety_settings,
+                        generation_config={
+                            "temperature": self.config.get('vertex_ai.temperature', 0.2),
+                            "top_p": self.config.get('vertex_ai.top_p', 0.95),
+                            "max_output_tokens": self.config.get('vertex_ai.max_output_tokens', 8192)
+                        }
+                    )
+                    if response.text:
+                        results['direct'] = self._clean_srt_content(response.text)
+                        console.print(f"[green]        Direct method: {len(results['direct'])} chars[/green]")
+                except Exception as e:
+                    console.print(f"[yellow]        Direct method failed: {str(e)}[/yellow]")
+                    
+        except Exception as e:
+            console.print(f"[red]      Error in dual method generation: {str(e)}[/red]")
+            return None
+            
         # Compare and select best result
         if not results:
+            console.print(f"[yellow]      No results from dual method[/yellow]")
             return None
             
         # For now, prefer direct method if available
         # In future, could implement quality scoring
         if 'direct' in results:
+            console.print(f"[green]      Using direct method result[/green]")
             return results['direct']
         else:
+            console.print(f"[green]      Using translation method result[/green]")
             return results.get('translate')
             
     def _get_safety_settings(self) -> List:
-        """Get safety settings for AI generation"""
-        # Safety settings disabled for now due to import issues
-        return []
+        """Get safety settings for AI generation - following reference implementation"""
+        try:
+            # Use SafetySetting objects like in the reference code
+            safety_settings = [
+                self.SafetySetting(
+                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
+                ),
+                self.SafetySetting(
+                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
+                ),
+                self.SafetySetting(
+                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
+                ),
+                self.SafetySetting(
+                    category=self.SafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=self.SafetySetting.HarmBlockThreshold.OFF,
+                ),
+            ]
+            return safety_settings
+            
+        except Exception as e:
+            console.print(f"[yellow]      Warning: Could not create safety settings: {e}[/yellow]")
+            return []
         
     def _get_last_timestamp(self, srt_content: str) -> float:
         """Get the last timestamp from SRT content in seconds"""
@@ -261,6 +335,42 @@ class AIGenerator:
         except Exception:
             return 0.0
         
+    def _parse_srt_response(self, response_text: str) -> Optional[str]:
+        """Parse SRT content from AI response following reference implementation"""
+        try:
+            # Extract content between ```srt markers like reference implementation
+            if '```srt' in response_text:
+                srt_file = response_text.split("```srt")[1]
+                srt_file = srt_file.split("```")[0]
+                if srt_file.startswith("\n"):
+                    srt_file = srt_file[1:]
+            else:
+                # If no code block, use the entire response
+                srt_file = response_text
+            
+            # Process line by line like the reference implementation
+            final_srt = ""
+            lines = srt_file.strip().split('\n')
+            
+            for i, line in enumerate(lines):
+                line = line.strip()
+                if line == "":
+                    continue
+                    
+                # Add each line with proper formatting
+                if i % 3 == 0:  # Subtitle number
+                    final_srt += line + "\n"
+                elif i % 3 == 1:  # Timestamp
+                    final_srt += line + "\n"
+                elif i % 3 == 2:  # Subtitle text
+                    final_srt += line + "\n"
+            
+            return final_srt if final_srt.strip() else None
+            
+        except Exception as e:
+            console.print(f"[yellow]      Warning: Error parsing SRT response: {e}[/yellow]")
+            return None
+    
     def _clean_srt_content(self, content: str) -> str:
         """Clean and validate SRT content - more flexible parsing like reference implementation"""
         # Remove any markdown formatting

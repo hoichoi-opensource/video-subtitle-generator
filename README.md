@@ -4,7 +4,7 @@ A production-grade video subtitle generation system powered by Google's Gemini A
 
 ## Features
 
-- 🎬 **Automatic Subtitle Generation**: Uses Vertex AI's Gemini model for accurate transcription
+- 🎬 **Automatic Subtitle Generation**: Uses Vertex AI's Gemini model for accurate transcription (REAL AI, not mock)
 - 🌐 **Multi-language Support**: English (primary), Hindi (dual-method), and Bengali
 - 🦻 **SDH Support**: Optional SDH subtitles with sound effects, music descriptions, and speaker identification
 - 📊 **Real-time Progress Tracking**: Visual stage-by-stage progress display
@@ -155,9 +155,9 @@ gcp:
   service_account_path: "./service-account.json"
 
 vertex_ai:
-  default_model: "gemini-1.5-pro-preview-05-06"
+  default_model: "gemini-2.5-pro-preview-05-06"
   max_tokens: 8192
-  temperature: 0.1
+  temperature: 0.2
 ```
 
 ## Usage
