@@ -10,6 +10,17 @@ import ffmpeg
 from pathlib import Path
 from typing import Optional, Dict, Any
 
+def safe_eval_fraction(fraction_str: str) -> float:
+    """Safely evaluate a fraction string like '30/1' or '25/1'"""
+    try:
+        if '/' in fraction_str:
+            numerator, denominator = fraction_str.split('/')
+            return float(numerator) / float(denominator)
+        else:
+            return float(fraction_str)
+    except (ValueError, ZeroDivisionError):
+        return 0.0
+
 def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Set up a logger with appropriate formatting"""
     logger = logging.getLogger(name)
@@ -97,7 +108,7 @@ def get_video_info(video_path: str) -> Optional[Dict[str, Any]]:
                 'width': video_stream.get('width', 0),
                 'height': video_stream.get('height', 0),
                 'video_codec': video_stream.get('codec_name', 'unknown'),
-                'fps': eval(video_stream.get('r_frame_rate', '0/1'))
+                'fps': safe_eval_fraction(video_stream.get('r_frame_rate', '0/1'))
             })
             
         if audio_stream:

@@ -11,7 +11,7 @@ class QualityAnalyzer:
     def __init__(self, config: ConfigManager):
         self.config = config
         
-    def analyze_subtitle(self, srt_content: str) -> Dict[str, any]:
+    def analyze_subtitle(self, srt_content: str) -> Dict[str, Any]:
         """Analyze subtitle quality metrics"""
         metrics = {
             'total_subtitles': 0,

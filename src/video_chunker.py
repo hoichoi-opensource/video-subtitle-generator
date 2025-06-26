@@ -8,7 +8,7 @@ import ffmpeg
 from pathlib import Path
 from typing import List, Dict, Callable, Optional, Any
 from config_manager import ConfigManager
-from utils import ensure_directory_exists
+from utils import ensure_directory_exists, safe_eval_fraction
 
 class VideoChunker:
     def __init__(self, config: ConfigManager):
@@ -43,7 +43,7 @@ class VideoChunker:
                 'total_chunks': total_chunks,
                 'width': video_stream.get('width') if video_stream else None,
                 'height': video_stream.get('height') if video_stream else None,
-                'fps': eval(video_stream.get('r_frame_rate', '0/1')) if video_stream else None,
+                'fps': safe_eval_fraction(video_stream.get('r_frame_rate', '0/1')) if video_stream else None,
                 'video_codec': video_stream.get('codec_name') if video_stream else None,
                 'audio_codec': audio_stream.get('codec_name') if audio_stream else None,
                 'audio_channels': audio_stream.get('channels') if audio_stream else None,
