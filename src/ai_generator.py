@@ -15,7 +15,17 @@ from google.cloud import storage
 from config_manager import ConfigManager
 from rich.console import Console
 
+# Production imports
+from .exceptions import (
+    VertexAIError, CloudStorageError, SubtitleGenerationError,
+    AuthenticationError, ValidationError, BaseSubtitleError
+)
+from .validators import LanguageValidator
+from .retry_handler import with_retry, rate_limiters
+from .logger import get_logger, log_performance, log_errors
+
 console = Console()
+logger = get_logger(__name__)
 
 class AIGenerator:
     def __init__(self, config: ConfigManager):
@@ -25,8 +35,10 @@ class AIGenerator:
         self.model = None
         self.storage_client = None
         
+    @log_performance('ai_generator_init')
     def initialize(self) -> None:
         """Initialize Vertex AI with proper authentication"""
+        logger.info("Initializing Vertex AI generator")
         try:
             # Set up authentication
             auth_method = self.config.get('gcp.auth_method', 'service_account')
@@ -50,12 +62,13 @@ class AIGenerator:
             # Initialize Vertex AI Generative Model for REAL AI transcription
             # This uses actual Google Gemini AI for video-to-subtitle generation
             try:
-                from vertexai.preview.generative_models import GenerativeModel, Part, HarmCategory, HarmBlockThreshold
+                from vertexai.preview.generative_models import GenerativeModel, Part, HarmCategory, HarmBlockThreshold, SafetySettings
                 
                 self.model = GenerativeModel(model_name)
                 self.Part = Part
                 self.HarmCategory = HarmCategory
                 self.HarmBlockThreshold = HarmBlockThreshold
+                self.SafetySettings = SafetySettings
                 self.system_instruction = system_instruction
                 console.print("✅ Vertex AI Gemini model initialized successfully for REAL transcription")
                 
@@ -79,11 +92,40 @@ class AIGenerator:
                 self.storage_client = storage.Client(project=self.project_id)
             
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize Vertex AI: {str(e)}")
+            logger.error(f"Failed to initialize Vertex AI: {str(e)}")
+            if "authentication" in str(e).lower() or "credentials" in str(e).lower():
+                raise AuthenticationError(
+                    f"Vertex AI authentication failed: {str(e)}",
+                    context={'project_id': self.project_id, 'location': self.location}
+                )
+            else:
+                raise VertexAIError(
+                    f"Failed to initialize Vertex AI: {str(e)}",
+                    context={'project_id': self.project_id, 'location': self.location}
+                )
             
+    @log_performance('generate_subtitles')
     def generate_subtitles(self, chunks: List[Dict[str, str]], languages: List[str], 
                           bucket_name: str, progress_callback: Optional[Callable[[int], None]] = None) -> List[Dict[str, str]]:
         """Generate subtitles for all chunks and languages"""
+        # Input validation
+        if not chunks:
+            raise ValidationError("No chunks provided for subtitle generation")
+        
+        if not languages:
+            raise ValidationError("No languages specified for subtitle generation")
+        
+        if not bucket_name:
+            raise ValidationError("Bucket name is required")
+        
+        # Validate languages
+        try:
+            validated_languages = LanguageValidator.validate_language_codes(languages)
+        except ValidationError as e:
+            logger.error(f"Language validation failed: {e}")
+            raise
+        
+        logger.info(f"Starting subtitle generation for {len(chunks)} chunks, {len(validated_languages)} languages")
         generated_subtitles = []
         total_tasks = len(chunks) * len(languages)
         
@@ -140,7 +182,16 @@ class AIGenerator:
                             })
                             
                     except Exception as e:
-                        console.print(f"[red]      Error generating {language} {subtitle_type}: {str(e)}[/red]")
+                        error_msg = f"Error generating {language} {subtitle_type}: {str(e)}"
+                        console.print(f"[red]      {error_msg}[/red]")
+                        logger.error(error_msg, extra={
+                            'context': {
+                                'chunk': chunk_name,
+                                'language': language,
+                                'subtitle_type': subtitle_type,
+                                'chunk_gcs_uri': chunk_gcs_uri
+                            }
+                        })
                         
                     completed_tasks += 1
                     if progress_callback:
@@ -149,6 +200,7 @@ class AIGenerator:
                         
         return generated_subtitles
         
+    @with_retry('ai', circuit_breaker_key='vertex_ai')
     def _generate_subtitle_for_chunk(self, video_uri: str, language: str, is_sdh: bool) -> Optional[str]:
         """Generate subtitle for a single chunk"""
         # Get appropriate prompt
@@ -165,6 +217,13 @@ class AIGenerator:
         if language == 'hin' and not is_sdh:
             # Generate using both methods and compare
             return self._generate_hindi_subtitle(video_uri, prompt)
+        
+        # Input validation
+        if not video_uri or not video_uri.startswith('gs://'):
+            raise ValidationError(f"Invalid GCS URI: {video_uri}")
+        
+        # Rate limiting
+        rate_limiters['vertex_ai'].wait_if_needed()
         
         # Create video part for Vertex AI
         try:
@@ -206,8 +265,38 @@ class AIGenerator:
                 return None
                 
         except Exception as e:
+            error_context = {
+                'video_uri': video_uri,
+                'language': language,
+                'is_sdh': is_sdh
+            }
+            
             console.print(f"[red]      Error generating subtitle with Vertex AI: {str(e)}[/red]")
-            return None
+            console.print(f"[red]      Video URI: {video_uri}[/red]")
+            console.print(f"[red]      Language: {language}[/red]")
+            
+            # Classify error type for proper handling
+            error_msg = str(e).lower()
+            if "quota" in error_msg or "rate limit" in error_msg:
+                raise SubtitleGenerationError(
+                    f"Vertex AI quota/rate limit exceeded: {str(e)}",
+                    context=error_context
+                )
+            elif "permission" in error_msg or "access" in error_msg:
+                raise AuthenticationError(
+                    f"Vertex AI access denied: {str(e)}",
+                    context=error_context
+                )
+            elif "safety" in error_msg or "blocked" in error_msg:
+                raise SubtitleGenerationError(
+                    f"Content blocked by safety filters: {str(e)}",
+                    context=error_context
+                )
+            else:
+                raise VertexAIError(
+                    f"Vertex AI generation failed: {str(e)}",
+                    context=error_context
+                )
     
             
     def _generate_hindi_subtitle(self, video_uri: str, prompt: str) -> Optional[str]:
@@ -286,24 +375,24 @@ class AIGenerator:
     def _get_safety_settings(self) -> List:
         """Get safety settings for AI generation - using current API structure"""
         try:
-            # Use the current API structure with HarmCategory and HarmBlockThreshold
+            # Use the proper SafetySettings objects
             safety_settings = [
-                {
-                    "category": self.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    "category": self.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    "category": self.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    "category": self.HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    "threshold": self.HarmBlockThreshold.BLOCK_NONE,
-                },
+                self.SafetySettings(
+                    category=self.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=self.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                self.SafetySettings(
+                    category=self.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=self.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                self.SafetySettings(
+                    category=self.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=self.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                self.SafetySettings(
+                    category=self.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=self.HarmBlockThreshold.BLOCK_NONE,
+                ),
             ]
             return safety_settings
             

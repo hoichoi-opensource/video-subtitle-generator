@@ -8,9 +8,22 @@ import time
 from pathlib import Path
 from typing import List, Dict, Optional, Callable, Any
 from google.cloud import storage
+from google.cloud.exceptions import GoogleCloudError, NotFound, Forbidden
 from google.oauth2 import service_account
 from config_manager import ConfigManager
 from utils import ensure_directory_exists
+from rich.console import Console
+
+# Production imports
+from .exceptions import (
+    CloudStorageError, AuthenticationError, ValidationError,
+    ResourceError, NetworkError
+)
+from .retry_handler import with_retry, rate_limiters
+from .logger import get_logger, log_performance
+
+console = Console()
+logger = get_logger(__name__)
 
 class GCSHandler:
     def __init__(self, config: ConfigManager):
@@ -21,9 +34,11 @@ class GCSHandler:
         self.bucket_mode = config.get('gcp.bucket_mode', 'create_new')
         self.existing_bucket = config.get('gcp.existing_bucket_name', '')
         
+    @log_performance('gcs_init')
     def initialize(self) -> None:
         """Initialize GCS client"""
         auth_method = self.config.get('gcp.auth_method', 'adc')
+        logger.info(f"Initializing GCS client with {auth_method} authentication")
         
         try:
             if auth_method == 'service_account':
@@ -47,10 +62,26 @@ class GCSHandler:
                 self.client = storage.Client(project=self.project_id)
                 
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize GCS client: {str(e)}")
+            logger.error(f"Failed to initialize GCS client: {str(e)}")
+            if "authentication" in str(e).lower() or "credentials" in str(e).lower():
+                raise AuthenticationError(
+                    f"GCS authentication failed: {str(e)}",
+                    context={'auth_method': auth_method, 'project_id': self.project_id}
+                )
+            else:
+                raise CloudStorageError(
+                    f"Failed to initialize GCS client: {str(e)}",
+                    context={'auth_method': auth_method, 'project_id': self.project_id}
+                )
             
+    @with_retry('storage', circuit_breaker_key='gcs')
+    @log_performance('create_job_bucket')
     def create_job_bucket(self, job_id: str) -> str:
         """Create or get bucket for job"""
+        if not job_id:
+            raise ValidationError("Job ID is required for bucket creation")
+        
+        logger.info(f"Creating/getting bucket for job {job_id}")""
         if self.bucket_mode == 'use_existing' and self.existing_bucket:
             # Use existing bucket
             bucket_name = self.existing_bucket
@@ -59,9 +90,26 @@ class GCSHandler:
             try:
                 bucket = self.client.bucket(bucket_name)
                 if not bucket.exists():
-                    raise RuntimeError(f"Bucket {bucket_name} does not exist")
+                    raise CloudStorageError(
+                        f"Bucket {bucket_name} does not exist",
+                        context={'bucket_name': bucket_name, 'job_id': job_id}
+                    )
+                logger.info(f"Using existing bucket: {bucket_name}")
+            except NotFound:
+                raise CloudStorageError(
+                    f"Bucket {bucket_name} not found",
+                    context={'bucket_name': bucket_name, 'job_id': job_id}
+                )
+            except Forbidden:
+                raise AuthenticationError(
+                    f"Access denied to bucket {bucket_name}",
+                    context={'bucket_name': bucket_name, 'job_id': job_id}
+                )
             except Exception as e:
-                raise RuntimeError(f"Cannot access bucket {bucket_name}: {str(e)}")
+                raise CloudStorageError(
+                    f"Cannot access bucket {bucket_name}: {str(e)}",
+                    context={'bucket_name': bucket_name, 'job_id': job_id, 'error': str(e)}
+                )
         else:
             # Create new bucket
             bucket_name = f"subtitle-gen-{self.project_id}-{int(time.time())}"
