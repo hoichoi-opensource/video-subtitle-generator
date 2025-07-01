@@ -41,10 +41,25 @@ class VideoValidator:
         except (OSError, ValueError) as e:
             raise ValidationError(f"Invalid file path: {file_path}", context={'error': str(e)})
         
-        # Security: Check for path traversal attacks
-        if '..' in str(path) or str(path).startswith('/'):
+        # Security: Enhanced path traversal protection
+        original_path = Path(file_path)
+        
+        # Check for suspicious patterns
+        path_str = str(original_path)
+        if any(pattern in path_str for pattern in ['../', '..\\', '%2e%2e', '%2E%2E']):
+            raise ValidationError(f"Path traversal attempt detected: {file_path}")
+        
+        # Ensure resolved path is within expected boundaries
+        cwd = Path.cwd()
+        try:
+            path.relative_to(cwd)
+        except ValueError:
+            # Path is outside current working directory, check if it's a valid absolute path
+            if not path.is_absolute():
+                raise ValidationError(f"Invalid relative path outside working directory: {file_path}")
+            # For absolute paths, ensure they exist and are accessible
             if not path.exists():
-                raise ValidationError(f"Suspicious or non-existent path: {file_path}")
+                raise ValidationError(f"Absolute path does not exist: {file_path}")
         
         if not path.exists():
             raise ValidationError(f"File does not exist: {path}")

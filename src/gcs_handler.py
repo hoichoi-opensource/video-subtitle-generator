@@ -10,8 +10,8 @@ from typing import List, Dict, Optional, Callable, Any
 from google.cloud import storage
 from google.cloud.exceptions import GoogleCloudError, NotFound, Forbidden
 from google.oauth2 import service_account
-from config_manager import ConfigManager
-from utils import ensure_directory_exists
+from .config_manager import ConfigManager
+from .utils import ensure_directory_exists
 from rich.console import Console
 
 # Production imports
@@ -81,7 +81,7 @@ class GCSHandler:
         if not job_id:
             raise ValidationError("Job ID is required for bucket creation")
         
-        logger.info(f"Creating/getting bucket for job {job_id}")""
+        logger.info(f"Creating/getting bucket for job {job_id}")
         if self.bucket_mode == 'use_existing' and self.existing_bucket:
             # Use existing bucket
             bucket_name = self.existing_bucket

@@ -186,11 +186,11 @@ class ConfigManager:
             for key in required_keys:
                 if self.get(key) is None:
                     health['required_keys_present'] = False
-                    health['errors'].append(f\"Missing required key: {key}\")
+                    health['errors'].append(f"Missing required key: {key}")
             
             # Check prompts
             if not self.prompts:
-                health['errors'].append(\"No prompts loaded\")
+                health['errors'].append("No prompts loaded")
             
             health['status'] = 'healthy' if not health['errors'] else 'unhealthy'
             return health

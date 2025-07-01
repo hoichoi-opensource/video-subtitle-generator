@@ -28,6 +28,7 @@ from ai_generator import AIGenerator
 from subtitle_merger import SubtitleMerger
 from quality_analyzer import QualityAnalyzer
 from utils import ensure_directory_exists, validate_video_file
+from llm_monitor import init_monitoring, shutdown_monitoring
 
 console = Console()
 
@@ -41,6 +42,9 @@ class SubtitleProcessor:
         self.ai_generator = AIGenerator(self.config)
         self.subtitle_merger = SubtitleMerger(self.config)
         self.quality_analyzer = QualityAnalyzer(self.config)
+        
+        # Initialize LLM monitoring
+        init_monitoring()
         
         # Ensure all required directories exist
         self._ensure_directories()

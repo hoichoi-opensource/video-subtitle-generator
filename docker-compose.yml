@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  subtitle-generator:
+    build: .
+    container_name: video-subtitle-generator
+    restart: unless-stopped
+    
+    environment:
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+      - ENV=production
+      
+    volumes:
+      # Mount input/output directories
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./config:/app/config
+      
+      # Mount credentials securely (create this file locally)
+      - ./credentials/service-account.json:/app/service-account.json:ro
+      
+    ports:
+      - "8080:8080"
+      
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 2G
+          cpus: '1'
+          
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.health_checker import HealthChecker; hc = HealthChecker(); exit(0 if hc.get_overall_health()['status'] == 'healthy' else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Optional: Add monitoring services
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: subtitle-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    profiles:
+      - monitoring

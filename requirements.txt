@@ -24,8 +24,8 @@ grpcio==1.73.1
 grpcio-status==1.62.3
 grpc-google-iam-v1==0.14.2
 
-# Protocol Buffers
-protobuf==4.25.8
+# Protocol Buffers - compatible with google-cloud-aiplatform
+protobuf>=3.19.5,<5.0.0
 proto-plus==1.26.1
 
 # Utility dependencies
@@ -65,3 +65,6 @@ google-crc32c==1.7.1
 
 # Type hints support
 typing-extensions==4.14.0
+
+# Monitoring and observability
+traceloop-sdk==0.40.14
