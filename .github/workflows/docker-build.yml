@@ -1,0 +1,51 @@
+name: Docker Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t video-subtitle-generator:test .
+
+    - name: Create test directories
+      run: |
+        mkdir -p data/{input,output,config,logs,temp,jobs}
+
+    - name: Create mock service account
+      run: |
+        echo '{"type":"service_account","project_id":"test"}' > data/config/service-account.json
+
+    - name: Test Docker container startup
+      run: |
+        docker run --rm \
+          -v $(pwd)/data:/data \
+          video-subtitle-generator:test \
+          python -c "from src.health_checker import quick_health_check; print('Health check passed')"
+
+    - name: Test help command
+      run: |
+        docker run --rm \
+          -v $(pwd)/data:/data \
+          video-subtitle-generator:test \
+          python main.py --help
+
+    - name: Test configuration validation
+      run: |
+        docker run --rm \
+          -v $(pwd)/data:/data \
+          video-subtitle-generator:test \
+          python -c "from src.config_manager import ConfigManager; cm = ConfigManager(); print('Config validation passed')"

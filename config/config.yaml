@@ -61,9 +61,10 @@ processing:
 
 # Language settings
 languages:
-  source: "ben"
+  source: "auto"  # Auto-detect source language
   subtitles:
-    available:
+    # Core mandatory languages
+    core:
       eng:
         name: "English"
         method: "transcribe"
@@ -71,11 +72,67 @@ languages:
       hin:
         name: "Hindi"
         method: "dual"
-        default: false
+        default: true
       ben:
         name: "Bengali"
         method: "transcribe"
-        default: false
+        default: true
+    # Optional Indian languages
+    indian:
+      tel:
+        name: "Telugu"
+        method: "translate"
+      mar:
+        name: "Marathi"
+        method: "translate"
+      tam:
+        name: "Tamil"
+        method: "translate"
+      guj:
+        name: "Gujarati"
+        method: "translate"
+      kan:
+        name: "Kannada"
+        method: "translate"
+      mal:
+        name: "Malayalam"
+        method: "translate"
+      pun:
+        name: "Punjabi"
+        method: "translate"
+      ori:
+        name: "Odia"
+        method: "translate"
+      asm:
+        name: "Assamese"
+        method: "translate"
+      urd:
+        name: "Urdu"
+        method: "translate"
+      san:
+        name: "Sanskrit"
+        method: "translate"
+      kok:
+        name: "Konkani"
+        method: "translate"
+      nep:
+        name: "Nepali"
+        method: "translate"
+      sit:
+        name: "Sinhala"
+        method: "translate"
+      mai:
+        name: "Maithili"
+        method: "translate"
+      bho:
+        name: "Bhojpuri"
+        method: "translate"
+      raj:
+        name: "Rajasthani"
+        method: "translate"
+      mag:
+        name: "Magahi"
+        method: "translate"
 
 # System settings
 system:

@@ -1,0 +1,115 @@
+# Production Configuration for Video Subtitle Generator
+# Optimized for high-throughput, reliability, and security
+
+app:
+  name: "Video Subtitle Generator"
+  version: "2.0.0"
+  environment: "production"
+  output_dir: "output"
+  temp_dir: "temp"
+  jobs_dir: "jobs"
+  logs_dir: "logs"
+
+# Google Cloud Platform settings - PRODUCTION
+gcp:
+  project_id: "content-subtitling"
+  location: "us-central1"
+  auth_method: "service_account"
+  service_account_path: "./service-account.json"
+  bucket_mode: "create_new"
+  existing_bucket_name: "subtitleinput"
+
+# Vertex AI settings - PRODUCTION OPTIMIZED
+vertex_ai:
+  default_model: "gemini-2.5-pro-preview-05-06"
+  temperature: 0.1  # Lower for more consistent results
+  top_p: 0.9
+  max_output_tokens: 8192
+  
+  # Production safety settings
+  safety_settings:
+    - category: "HARM_CATEGORY_HATE_SPEECH"
+      threshold: "BLOCK_LOW_AND_ABOVE"
+    - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
+      threshold: "BLOCK_LOW_AND_ABOVE"
+    - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+      threshold: "BLOCK_LOW_AND_ABOVE"
+    - category: "HARM_CATEGORY_HARASSMENT"
+      threshold: "BLOCK_LOW_AND_ABOVE"
+
+# Processing settings - PRODUCTION OPTIMIZED
+processing:
+  chunk_duration: 60
+  parallel_workers: 6  # Increased for production
+  max_retries: 5      # More retries for reliability
+  retry_delay: 3
+  timing_offset_ms: 0
+  keep_temp_files: false
+  keep_gcs_data: false
+
+# Language settings
+languages:
+  source: "ben"
+  subtitles:
+    available:
+      eng:
+        name: "English"
+        method: "transcribe"
+        default: true
+      hin:
+        name: "Hindi"
+        method: "dual"
+        default: false
+      ben:
+        name: "Bengali"
+        method: "transcribe"
+        default: false
+
+# System settings - PRODUCTION LIMITS
+system:
+  supported_video_formats:
+    - "mp4"
+    - "avi" 
+    - "mkv"
+    - "mov"
+    - "webm"
+  max_file_size_gb: 25      # Increased for production
+  max_duration_hours: 24    # Extended for long content
+  log_level: "INFO"
+
+# Production monitoring and limits
+production:
+  health_check_interval: 300
+  memory_warning_threshold: 6144
+  memory_critical_threshold: 8192
+  disk_warning_threshold: 50
+  max_concurrent_jobs: 8
+  temp_file_retention_hours: 24
+  log_retention_days: 30
+  
+# Resource management
+resources:
+  max_memory_mb: 8192
+  max_disk_gb: 100
+  cleanup_interval_minutes: 30
+  
+# Security settings
+security:
+  enable_path_validation: true
+  max_path_length: 4096
+  allowed_temp_dirs: ["temp", "/tmp", "/var/tmp"]
+  file_size_limits:
+    video: "25GB"
+    subtitle: "50MB"
+    
+# Retry and circuit breaker settings
+resilience:
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout: 300
+    half_open_max_calls: 3
+  retry:
+    max_attempts: 5
+    base_delay: 1.0
+    max_delay: 60.0
+    exponential_base: 2.0

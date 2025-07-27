@@ -10,8 +10,8 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Callable, Optional, Tuple
 from datetime import timedelta
-from config_manager import ConfigManager
-from utils import ensure_directory_exists
+from .config_manager import ConfigManager
+from .utils import ensure_directory_exists
 from rich.console import Console
 
 console = Console()

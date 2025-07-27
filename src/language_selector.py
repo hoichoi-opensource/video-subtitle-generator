@@ -7,7 +7,7 @@ from typing import List, Tuple
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
-from config_manager import ConfigManager
+from .config_manager import ConfigManager
 
 console = Console()
 

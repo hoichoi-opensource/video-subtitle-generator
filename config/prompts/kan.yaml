@@ -1,0 +1,12 @@
+prompt: |
+  Generate Kannada subtitles by translating from the audio content.
+
+  INSTRUCTIONS:
+  - First understand the audio in English/Hindi/Bengali
+  - Translate to Kannada accurately maintaining context
+  - Use Kannada script (ಕನ್ನಡ)
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+  - Maintain timing synchronization
+  - Use natural Kannada expressions
+
+  Provide ONLY the SRT formatted subtitles in Kannada, no additional text.

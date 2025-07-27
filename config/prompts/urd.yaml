@@ -1,0 +1,13 @@
+prompt: |
+  Generate Urdu subtitles by translating from the audio content.
+
+  INSTRUCTIONS:
+  - First understand the audio in English/Hindi/Bengali
+  - Translate to Urdu accurately maintaining context
+  - Use Urdu script (اردو)
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+  - Maintain timing synchronization
+  - Use natural Urdu expressions
+  - Consider cultural and linguistic nuances
+
+  Provide ONLY the SRT formatted subtitles in Urdu, no additional text.

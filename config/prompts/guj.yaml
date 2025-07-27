@@ -1,0 +1,12 @@
+prompt: |
+  Generate Gujarati subtitles by translating from the audio content.
+
+  INSTRUCTIONS:
+  - First understand the audio in English/Hindi/Bengali
+  - Translate to Gujarati accurately maintaining context
+  - Use Gujarati script (ગુજરાતી)
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+  - Maintain timing synchronization
+  - Use natural Gujarati expressions
+
+  Provide ONLY the SRT formatted subtitles in Gujarati, no additional text.

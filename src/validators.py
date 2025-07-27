@@ -194,17 +194,30 @@ class LanguageValidator:
     """Language code validation"""
     
     SUPPORTED_LANGUAGES = {
+        # Core mandatory languages
         'eng': 'English',
-        'hin': 'Hindi',
-        'spa': 'Spanish',
-        'fra': 'French',
-        'deu': 'German',
-        'ita': 'Italian',
-        'por': 'Portuguese',
-        'rus': 'Russian',
-        'jpn': 'Japanese',
-        'kor': 'Korean',
-        'zho': 'Chinese'
+        'hin': 'Hindi', 
+        'ben': 'Bengali',
+        
+        # Optional Indian languages
+        'tel': 'Telugu',
+        'mar': 'Marathi',
+        'tam': 'Tamil',
+        'guj': 'Gujarati',
+        'kan': 'Kannada',
+        'mal': 'Malayalam',
+        'pun': 'Punjabi',
+        'ori': 'Odia',
+        'asm': 'Assamese',
+        'urd': 'Urdu',
+        'san': 'Sanskrit',
+        'kok': 'Konkani',
+        'nep': 'Nepali',
+        'sit': 'Sinhala',
+        'mai': 'Maithili',
+        'bho': 'Bhojpuri',
+        'raj': 'Rajasthani',
+        'mag': 'Magahi'
     }
     
     @classmethod
@@ -213,7 +226,7 @@ class LanguageValidator:
         if not languages:
             raise ValidationError("At least one language must be specified")
         
-        if len(languages) > 10:  # Production limit
+        if len(languages) > 10:  # Production limit for Indian languages
             raise ValidationError("Too many languages specified (max 10)")
         
         validated = []
@@ -238,6 +251,56 @@ class LanguageValidator:
                 validated.append(lang)
         
         return validated
+    
+    @classmethod
+    def get_core_languages(cls) -> Dict[str, str]:
+        """Get core mandatory languages"""
+        return {
+            'eng': 'English',
+            'hin': 'Hindi',
+            'ben': 'Bengali'
+        }
+    
+    @classmethod
+    def get_optional_indian_languages(cls) -> Dict[str, str]:
+        """Get optional Indian languages"""
+        return {
+            'tel': 'Telugu',
+            'mar': 'Marathi',
+            'tam': 'Tamil',
+            'guj': 'Gujarati',
+            'kan': 'Kannada',
+            'mal': 'Malayalam',
+            'pun': 'Punjabi',
+            'ori': 'Odia',
+            'asm': 'Assamese',
+            'urd': 'Urdu',
+            'san': 'Sanskrit',
+            'kok': 'Konkani',
+            'nep': 'Nepali',
+            'sit': 'Sinhala',
+            'mai': 'Maithili',
+            'bho': 'Bhojpuri',
+            'raj': 'Rajasthani',
+            'mag': 'Magahi'
+        }
+    
+    @classmethod
+    def get_all_indian_languages(cls) -> Dict[str, str]:
+        """Get all Indian languages (core + optional)"""
+        indian_languages = {'hin': 'Hindi', 'ben': 'Bengali'}
+        indian_languages.update(cls.get_optional_indian_languages())
+        return indian_languages
+    
+    @classmethod
+    def is_core_language(cls, lang_code: str) -> bool:
+        """Check if language code is a core mandatory language"""
+        return lang_code.lower() in cls.get_core_languages()
+    
+    @classmethod
+    def is_indian_language(cls, lang_code: str) -> bool:
+        """Check if language code is an Indian language"""
+        return lang_code.lower() in cls.get_all_indian_languages()
 
 
 class ConfigValidator:

@@ -19,16 +19,16 @@ from rich.prompt import Prompt, Confirm
 from rich.table import Table
 from rich import print as rprint
 
-from config_manager import ConfigManager
-from state_manager import StateManager, JobState, ProcessingStage
-from language_selector import LanguageSelector
-from video_chunker import VideoChunker
-from gcs_handler import GCSHandler
-from ai_generator import AIGenerator
-from subtitle_merger import SubtitleMerger
-from quality_analyzer import QualityAnalyzer
-from utils import ensure_directory_exists, validate_video_file
-from llm_monitor import init_monitoring, shutdown_monitoring
+from .config_manager import ConfigManager
+from .state_manager import StateManager, JobState, ProcessingStage
+from .language_selector import LanguageSelector
+from .video_chunker import VideoChunker
+from .gcs_handler import GCSHandler
+from .ai_generator import AIGenerator
+from .subtitle_merger import SubtitleMerger
+from .quality_analyzer import QualityAnalyzer
+from .utils import ensure_directory_exists, validate_video_file
+from .llm_monitor import init_monitoring, shutdown_monitoring
 
 console = Console()
 

@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 # Import and run the subtitle processor
-from subtitle_processor import main
+from src.subtitle_processor import main
 
 if __name__ == "__main__":
     try:

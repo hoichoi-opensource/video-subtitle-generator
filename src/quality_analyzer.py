@@ -5,7 +5,7 @@ Analyzes and compares subtitle quality
 
 import re
 from typing import List, Dict, Tuple, Optional, Any
-from config_manager import ConfigManager
+from .config_manager import ConfigManager
 
 class QualityAnalyzer:
     def __init__(self, config: ConfigManager):

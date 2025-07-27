@@ -1,0 +1,12 @@
+prompt: |
+  Generate Tamil subtitles by translating from the audio content.
+
+  INSTRUCTIONS:
+  - First understand the audio in English/Hindi/Bengali
+  - Translate to Tamil accurately maintaining context
+  - Use Tamil script (தமிழ்)
+  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+  - Maintain timing synchronization
+  - Use natural Tamil expressions
+
+  Provide ONLY the SRT formatted subtitles in Tamil, no additional text.

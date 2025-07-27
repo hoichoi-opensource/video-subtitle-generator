@@ -1,0 +1,105 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Project specific
+data/
+input/
+output/
+temp/
+jobs/
+logs/
+chunks/
+subtitles/
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.webm
+*.srt
+*.vtt
+
+# Credentials - NEVER include in image
+service-account.json
+*.json
+!service-account.json.example
+credentials/
+.env
+.env.*
+
+# Documentation - keep essential ones
+*.md
+!README.md
+!SECURITY.md
+!LICENSE
+
+# Build artifacts
+build/
+dist/
+*.build
+*.dist
+
+# Node (if any frontend)
+node_modules/
+
+# Testing
+tests/
+test/
+*_test.py
+test_*.py
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+*~
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z

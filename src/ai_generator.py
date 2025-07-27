@@ -12,7 +12,7 @@ import vertexai
 from google.cloud import aiplatform
 from google.cloud.aiplatform import gapic
 from google.cloud import storage
-from config_manager import ConfigManager
+from .config_manager import ConfigManager
 from rich.console import Console
 
 # Production imports

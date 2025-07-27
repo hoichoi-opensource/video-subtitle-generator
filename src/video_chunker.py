@@ -7,8 +7,8 @@ import os
 import ffmpeg
 from pathlib import Path
 from typing import List, Dict, Callable, Optional, Any
-from config_manager import ConfigManager
-from utils import ensure_directory_exists, safe_eval_fraction
+from .config_manager import ConfigManager
+from .utils import ensure_directory_exists, safe_eval_fraction
 
 class VideoChunker:
     def __init__(self, config: ConfigManager):
