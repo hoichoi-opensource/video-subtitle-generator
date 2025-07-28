@@ -33,7 +33,7 @@ cp /path/to/your-service-account.json data/config/
 
 ### 2️⃣ Run
 ```bash
-# Modern Docker Compose syntax
+# Modern Docker Compose syntax (uses compose.yml)
 docker compose run --rm subtitle-generator
 
 # Or use convenience scripts
@@ -99,7 +99,7 @@ docker compose down
 Video-subtitle-Generator/
 ├── 🐳 Docker Files
 │   ├── Dockerfile                 # Production container
-│   ├── docker-compose.yml         # Service orchestration
+│   ├── compose.yml                # Service orchestration (modern)
 │   ├── docker-entrypoint.sh       # Container initialization
 │   └── docker-run.sh/.bat        # Convenience scripts
 ├── 📱 Application
@@ -133,11 +133,11 @@ processing:
 ```
 
 ### Environment Variables
-Edit `docker-compose.yml`:
+Edit `compose.yml`:
 ```yaml
 environment:
-  - LOG_LEVEL=INFO              # DEBUG, INFO, WARNING, ERROR
-  - ENV=production              # production, development
+  LOG_LEVEL: INFO               # DEBUG, INFO, WARNING, ERROR
+  ENV: production               # production, development
 ```
 
 ## 🌍 Supported Languages
@@ -231,7 +231,7 @@ docker compose exec subtitle-generator python -c \
 
 ### Docker Swarm
 ```bash
-docker stack deploy -c docker-compose.yml subtitle-stack
+docker stack deploy -c compose.yml subtitle-stack
 ```
 
 ### Kubernetes
@@ -241,7 +241,7 @@ docker build -t your-registry/subtitle-generator:latest .
 docker push your-registry/subtitle-generator:latest
 
 # Deploy (create k8s manifests from compose)
-kompose convert -f docker-compose.yml
+kompose convert -f compose.yml
 kubectl apply -f .
 ```
 

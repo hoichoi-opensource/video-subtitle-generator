@@ -1,0 +1,207 @@
+# Docker Compose for Video Subtitle Generator
+# Using modern Compose specification with latest best practices
+
+name: video-subtitle-generator
+
+services:
+  subtitle-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      tags:
+        - video-subtitle-generator:latest
+        - video-subtitle-generator:${VERSION:-latest}
+    image: video-subtitle-generator:latest
+    container_name: video-subtitle-generator
+    restart: unless-stopped
+    
+    environment:
+      # Application settings
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
+      ENV: production
+      
+      # Google Cloud settings (optional - can use service account file instead)
+      # GOOGLE_APPLICATION_CREDENTIALS: /app/service-account.json
+      # GCP_PROJECT_ID: your-project-id
+      
+    volumes:
+      # Input/Output directories - map to your local directories
+      - type: bind
+        source: ./data/input
+        target: /data/input
+        read_only: false
+      - type: bind
+        source: ./data/output
+        target: /data/output
+        read_only: false
+      - type: bind
+        source: ./data/logs
+        target: /data/logs
+        read_only: false
+      - type: bind
+        source: ./data/temp
+        target: /data/temp
+        read_only: false
+      - type: bind
+        source: ./data/jobs
+        target: /data/jobs
+        read_only: false
+      
+      # Configuration and credentials
+      - type: bind
+        source: ./data/config
+        target: /data/config
+        read_only: true
+      
+      # Optional: Mount local development code for hot reload
+      # - type: bind
+      #   source: ./src
+      #   target: /app/src
+      #   read_only: true
+      
+    ports:
+      # Web interface port (if implemented)
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+        
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 2G
+          cpus: '1'
+          
+    # Health check
+    healthcheck:
+      test: 
+        - CMD
+        - python
+        - -c
+        - "from src.health_checker import quick_health_check; h=quick_health_check(); exit(0 if h['overall_status'] in ['healthy','warning'] else 1)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 5s
+    
+    # Run in interactive mode by default
+    stdin_open: true
+    tty: true
+    
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    
+    # Override command examples:
+    # command: ["python", "main.py", "--help"]
+    # command: ["python", "main.py", "--video", "/data/input/video.mp4", "--languages", "eng,hin"]
+    # command: ["python", "main.py", "--batch", "/data/input"]
+
+  # Optional: Add monitoring stack
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: subtitle-prometheus
+    ports:
+      - target: 9090
+        published: 9090
+        protocol: tcp
+        mode: host
+    volumes:
+      - type: bind
+        source: ./monitoring/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+      - type: volume
+        source: prometheus_data
+        target: /prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+    profiles:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    user: "65534:65534"
+    restart: unless-stopped
+      
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: subtitle-grafana
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: host
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_USERS_DEFAULT_THEME: light
+      GF_LOG_LEVEL: warn
+    volumes:
+      - type: volume
+        source: grafana_data
+        target: /var/lib/grafana
+      - type: bind
+        source: ./monitoring/grafana/dashboards
+        target: /etc/grafana/provisioning/dashboards
+        read_only: true
+      - type: bind
+        source: ./monitoring/grafana/datasources
+        target: /etc/grafana/provisioning/datasources
+        read_only: true
+    depends_on:
+      prometheus:
+        condition: service_healthy
+        restart: true
+    profiles:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    user: "472:472"
+    restart: unless-stopped
+    healthcheck:
+      test: 
+        - CMD-SHELL
+        - "curl -f http://localhost:3000/api/health || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/monitoring/prometheus
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/monitoring/grafana
+
+networks:
+  default:
+    name: subtitle-generator-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
