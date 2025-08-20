@@ -11,17 +11,17 @@
 ### 2️⃣ Quick Setup
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/your-username/Video-subtitle-Generator.git
 cd Video-subtitle-Generator
 
-# Create data folders
-mkdir -p data/{input,output,config,logs,temp,jobs}
+# Run automated setup (recommended)
+./setup.sh
 
-# Copy your Google Cloud credentials
-cp /path/to/your-service-account.json data/config/
-
-# Make scripts executable (Linux/Mac)
-chmod +x docker-run.sh docker-entrypoint.sh
+# OR manual setup:
+mkdir -p input output logs temp jobs
+cp /path/to/your-service-account.json ./service-account.json
+cp .env.template .env
+# Edit .env with your Google Cloud settings
 ```
 
 ### 3️⃣ Run It!
@@ -43,7 +43,7 @@ That's it! The application will build and start in interactive mode.
 ### Method 1: Interactive Mode (Easiest)
 ```bash
 # Copy video to input folder
-cp my-video.mp4 data/input/
+cp my-video.mp4 input/
 
 # Run interactive mode
 ./docker-run.sh              # Linux/Mac
@@ -54,12 +54,14 @@ docker-run.bat               # Windows
 
 ### Method 2: Command Line
 ```bash
-# Modern docker compose syntax
-docker compose run --rm subtitle-generator python main.py --video /data/input/my-video.mp4 --languages eng,hin,ben
+# Single video with precision validation
+docker compose run --rm subtitle-generator python main.py --video input/my-video.mp4 --languages eng,hin,ben
 
-# Or using convenience scripts
-./docker-run.sh --video /data/input/my-video.mp4 --languages eng,hin,ben,tel
-./docker-run.sh --batch /data/input
+# Batch process all videos in input/
+docker compose run --rm subtitle-generator python main.py --batch input/
+
+# Generate SDH (accessibility) subtitles
+docker compose run --rm subtitle-generator python main.py --video input/my-video.mp4 --languages eng --sdh
 ```
 
 ## 🎮 Common Commands

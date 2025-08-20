@@ -35,8 +35,8 @@ The system has been enhanced with production-grade features:
 ### 1. System Requirements
 
 ```bash
-# Check system requirements
-python3 test_production.py
+# Test the system setup
+python3 test_precision_subtitles.py
 ```
 
 **Minimum Requirements:**
