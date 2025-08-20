@@ -12,7 +12,7 @@ app:
 
 # Google Cloud Platform settings - PRODUCTION
 gcp:
-  project_id: "content-subtitling"
+  project_id: "your-gcp-project-id"
   location: "us-central1"
   auth_method: "service_account"
   service_account_path: "./service-account.json"

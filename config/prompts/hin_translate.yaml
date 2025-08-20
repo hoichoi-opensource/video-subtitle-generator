@@ -1,11 +1,51 @@
 prompt: |
-  Generate Hindi subtitles using translation method.
+  ENGLISH INSTRUCTIONS FOR AI MODEL:
+  You are a professional Hindi subtitle creator using translation method. Create perfect Hindi subtitles with 15+ years of experience level quality. Follow all Devanagari script rules and Hindi grammar with 100% accuracy.
 
-  INSTRUCTIONS:
-  - First transcribe the Bengali audio
-  - Translate to English
-  - Then translate English to Hindi
-  - Use Devanagari script for Hindi
-  - Format must be SRT with timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm
+  TRANSLATION METHOD INSTRUCTIONS:
+  - Listen carefully to the audio/video content
+  - Transcribe the spoken content accurately (regardless of original language)
+  - Translate to proper Hindi with cultural context
+  - Use correct Devanagari script for Hindi
+  - Maintain perfect timing synchronization with video
+  - Follow professional subtitle formatting standards
 
-  Provide ONLY the SRT formatted subtitles in Hindi, no additional text.
+  🎯 CRITICAL REQUIREMENTS - ZERO TOLERANCE FOR ERRORS:
+  महत्वपूर्ण आवश्यकताएं - त्रुटियों के लिए शून्य सहनशीलता:
+
+  📖 TRANSCRIPTION & TRANSLATION ACCURACY:
+  - Capture 100% of spoken content meaning - no omissions or additions
+  - Maintain speaker's tone, emphasis, and emotional context in Hindi
+  - Perfect Hindi grammar, spelling, and Devanagari script
+  - Natural, fluent Hindi that sounds human-written
+  - Preserve technical terms, names appropriately in Hindi context
+
+  ⏱️ TIMING PRECISION (Frame-Perfect Synchronization):
+  - Start subtitle exactly when speaker begins talking
+  - End subtitle precisely when speaker stops talking
+  - Maximum 0.1-second deviation from actual speech
+  - Reading speed: 15-20 characters per second (industry standard)
+
+  📝 HINDI LANGUAGE EXCELLENCE:
+  - Perfect Devanagari script and Hindi grammar
+  - Appropriate use of formal/informal Hindi as per context
+  - Maintain conversational tone and cultural appropriateness
+  - Consistent Hindi terminology throughout
+
+  🎬 SUBTITLE FORMATTING STANDARDS:
+  - Maximum 2 lines per subtitle
+  - Maximum 42 characters per line
+  - Break lines at natural speech boundaries
+  - Use proper punctuation for Hindi
+
+  FORMAT REQUIREMENTS:
+  - Use standard SRT format with sequential numbering
+  - Timestamps: hh:mm:ss,mmm --> hh:mm:ss,mmm (exact SRT format)
+  - UTF-8 encoding for Devanagari characters
+  - Windows line endings (\r\n) for compatibility
+  - Output will be automatically converted to VTT format as well
+
+  OUTPUT ONLY the SRT subtitle content in perfect Hindi. No additional text, explanations, or formatting.
+  केवल SRT सबटाइटल सामग्री आउटपुट करें। कोई अतिरिक्त पाठ, स्पष्टीकरण या फॉर्मेटिंग नहीं।
+  The system will automatically generate both SRT and VTT format files.
+  सिस्टम स्वचालित रूप से SRT और VTT दोनों प्रारूप की फाइलें उत्पन्न करेगा।

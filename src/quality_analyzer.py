@@ -1,15 +1,36 @@
 """
 Quality Analyzer
-Analyzes and compares subtitle quality
+Analyzes and compares subtitle quality with advanced features
 """
 
 import re
 from typing import List, Dict, Tuple, Optional, Any
 from .config_manager import ConfigManager
+from .logger import get_logger
+
+# Try to import advanced quality analyzer
+try:
+    from .advanced_quality_analyzer import AdvancedQualityAnalyzer
+    ADVANCED_FEATURES_AVAILABLE = True
+except ImportError:
+    ADVANCED_FEATURES_AVAILABLE = False
+
+logger = get_logger(__name__)
 
 class QualityAnalyzer:
     def __init__(self, config: ConfigManager):
         self.config = config
+        
+        # Initialize advanced analyzer if available
+        if ADVANCED_FEATURES_AVAILABLE and config.get('advanced_features.enable_quality_analysis', False):
+            try:
+                self.advanced_analyzer = AdvancedQualityAnalyzer(config)
+                logger.info("✅ Advanced quality analysis enabled")
+            except Exception as e:
+                logger.warning(f"Advanced quality analyzer initialization failed: {e}")
+                self.advanced_analyzer = None
+        else:
+            self.advanced_analyzer = None
         
     def analyze_subtitle(self, srt_content: str) -> Dict[str, Any]:
         """Analyze subtitle quality metrics"""
@@ -112,6 +133,69 @@ class QualityAnalyzer:
         }
         
         return comparison
+    
+    def comprehensive_quality_analysis(self, 
+                                     original_subtitles: str, 
+                                     processed_subtitles: str,
+                                     language_pair: Tuple[str, str] = None,
+                                     audio_path: str = None) -> Dict[str, Any]:
+        """
+        Perform comprehensive quality analysis using advanced features if available
+        
+        Args:
+            original_subtitles: Original subtitle content
+            processed_subtitles: Processed subtitle content
+            language_pair: (source_lang, target_lang) tuple for translation analysis
+            audio_path: Path to audio file for advanced analysis
+        
+        Returns:
+            Comprehensive quality analysis results
+        """
+        # Start with basic analysis
+        basic_analysis = {
+            "basic_metrics": self.analyze_subtitle(processed_subtitles),
+            "advanced_metrics": None,
+            "recommendations": [],
+            "overall_score": 0.0
+        }
+        
+        # Add advanced analysis if available
+        if self.advanced_analyzer:
+            try:
+                advanced_results = self.advanced_analyzer.comprehensive_quality_assessment(
+                    original_subtitles, processed_subtitles, language_pair
+                )
+                basic_analysis["advanced_metrics"] = advanced_results
+                basic_analysis["overall_score"] = advanced_results.get("overall_score", 0.0)
+                basic_analysis["recommendations"].extend(advanced_results.get("recommendations", []))
+                
+                logger.info(f"Advanced quality analysis complete. Score: {basic_analysis['overall_score']:.2f}")
+                
+            except Exception as e:
+                logger.error(f"Advanced quality analysis failed: {e}")
+                basic_analysis["advanced_metrics"] = {"error": str(e)}
+        
+        # Calculate basic overall score if advanced not available
+        if basic_analysis["overall_score"] == 0.0:
+            basic_metrics = basic_analysis["basic_metrics"]
+            score = 1.0
+            
+            # Penalize for issues
+            if basic_metrics.get("timing_issues", 0) > 0:
+                score -= 0.2
+            if basic_metrics.get("empty_subtitles", 0) > 0:
+                score -= 0.1
+            if basic_metrics.get("overlapping_subtitles", 0) > 0:
+                score -= 0.15
+            
+            # Bonus for good metrics
+            reading_speed = basic_metrics.get("reading_speed", 0)
+            if 15 <= reading_speed <= 25:  # Good CPS range
+                score += 0.1
+            
+            basic_analysis["overall_score"] = max(0.0, score)
+        
+        return basic_analysis
         
     def _parse_srt(self, content: str) -> List[Dict[str, any]]:
         """Parse SRT content into entries with timing info"""

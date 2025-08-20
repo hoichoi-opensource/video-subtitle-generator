@@ -1,20 +1,23 @@
-# Minimal requirements - core dependencies only
+# Minimal requirements for basic functionality - Latest 2025
+# Use this for lightweight deployments or testing environments
 # Other dependencies will be installed automatically
 
 # Core application dependencies
 ffmpeg-python==0.2.0
 PyYAML==6.0.2
 click==8.2.1
-rich==14.0.0
-python-dotenv==1.1.1
+rich==13.9.4
+rich-click==1.8.9
+python-dotenv>=1.0.1
 
 # Google Cloud AI Platform (includes many sub-dependencies)
-google-cloud-aiplatform==1.40.0
+google-cloud-aiplatform>=1.78.0
+google-cloud-storage>=2.19.0
 
 # Authentication dependencies
-google-auth==2.40.3
-google-auth-oauthlib==1.2.2
-google-auth-httplib2==0.2.0
+google-auth>=2.35.0
+google-auth-oauthlib>=1.2.1
+google-auth-httplib2>=0.2.0
 
 # Type hints support
-typing-extensions==4.14.0
+typing-extensions>=4.12.0

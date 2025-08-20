@@ -1,5 +1,6 @@
 # Docker Compose for Video Subtitle Generator
-# Using modern Compose specification with latest best practices
+# Using modern Compose specification v3.9+ with 2025 best practices
+# Compatible with Docker Compose v2.32+ and Docker Engine v28+
 
 name: video-subtitle-generator
 
@@ -109,9 +110,9 @@ services:
     # command: ["python", "main.py", "--video", "/data/input/video.mp4", "--languages", "eng,hin"]
     # command: ["python", "main.py", "--batch", "/data/input"]
 
-  # Optional: Add monitoring stack
+  # Optional: Add monitoring stack - Updated 2025 versions
   prometheus:
-    image: prom/prometheus:v2.47.2
+    image: prom/prometheus:v2.58.0
     container_name: subtitle-prometheus
     ports:
       - target: 9090
@@ -132,15 +133,22 @@ services:
       - --storage.tsdb.retention.time=30d
       - --web.console.libraries=/etc/prometheus/console_libraries
       - --web.console.templates=/etc/prometheus/consoles
+      - --web.enable-lifecycle
     profiles:
       - monitoring
     security_opt:
       - no-new-privileges:true
     user: "65534:65534"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
       
   grafana:
-    image: grafana/grafana:10.2.0
+    image: grafana/grafana:11.5.0
     container_name: subtitle-grafana
     ports:
       - target: 3000
@@ -153,6 +161,8 @@ services:
       GF_SECURITY_DISABLE_GRAVATAR: "true"
       GF_USERS_DEFAULT_THEME: light
       GF_LOG_LEVEL: warn
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: strict
     volumes:
       - type: volume
         source: grafana_data

@@ -55,6 +55,33 @@ error_*.py
 simple_*.py
 test_*.py
 
+# Implementation summary files (keep public documentation)
+!PRECISION_IMPLEMENTATION_SUMMARY.md
+!TRANSLATION_QUALITY_IMPLEMENTATION.md
+
+# Test results
+test_results_*.json
+test_results_*.html
+
+# Google Cloud Service Account Keys (SENSITIVE)
+service-account.json
+*-service-account.json
+google-credentials.json
+gcp-credentials.json
+
+# Additional sensitive patterns
+*.key
+*.pem
+*.token
+*.api-key
+credentials.txt
+secrets.yaml
+config.local.yaml
+config.private.yaml
+
+# Claude Code specific
+.claude/settings.local.json
+
 # Environment
 .env
 .env.local

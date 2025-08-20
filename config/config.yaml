@@ -11,8 +11,8 @@ app:
 
 # Google Cloud Platform settings
 gcp:
-  # Your GCP project ID
-  project_id: "content-subtitling"
+  # Your GCP project ID - REPLACE WITH YOUR PROJECT ID
+  project_id: "your-gcp-project-id"
   
   # GCP region for Vertex AI
   location: "us-central1"
@@ -25,7 +25,7 @@ gcp:
   
   # Bucket configuration
   bucket_mode: "create_new"
-  existing_bucket_name: "subtitleinput"
+  existing_bucket_name: "your-bucket-name"
 
 # Vertex AI settings
 vertex_ai:
@@ -144,3 +144,34 @@ system:
     - "webm"
   max_file_size_gb: 10
   log_level: "INFO"
+
+# Advanced features configuration
+advanced_features:
+  # Enable advanced quality analysis (BLEU scores, sentiment analysis)
+  enable_quality_analysis: true
+  
+  # Enable enhanced timing analysis (speech rate detection, pause detection)
+  enable_timing_analysis: true
+  
+  # Enable multi-modal processing (visual context, speaker identification)
+  enable_multimodal_processing: true
+  
+  # Quality analysis settings
+  quality_analysis:
+    bleu_score_threshold: 0.3      # Minimum acceptable BLEU score
+    sentiment_threshold: 0.3       # Maximum sentiment difference allowed
+    confidence_threshold: 0.7      # Minimum confidence for speech recognition
+  
+  # Timing analysis settings
+  timing_analysis:
+    target_reading_speed_wpm: 200  # Target words per minute
+    min_pause_duration: 0.3        # Minimum pause duration to detect (seconds)
+    speech_rate_tolerance: 0.2     # Tolerance for speech rate variations
+  
+  # Multi-modal processing settings
+  multimodal_processing:
+    enable_scene_detection: true   # Visual scene change detection
+    enable_speaker_id: true        # Audio speaker identification
+    enable_noise_filtering: true   # Background noise filtering
+    scene_change_threshold: 0.7    # Threshold for scene change detection
+    speaker_clustering_max: 6      # Maximum number of speakers to identify

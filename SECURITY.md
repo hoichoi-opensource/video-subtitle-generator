@@ -11,7 +11,7 @@ If you cloned this repository with the exposed `service-account.json`:
 
 1. **Go to Google Cloud Console**
 2. **Navigate to IAM & Admin > Service Accounts**
-3. **Find the service account: `content-subtitling@content-subtitling.iam.gserviceaccount.com`**
+3. **Find your service account: `your-service-account@your-project-id.iam.gserviceaccount.com`**
 4. **Delete or disable the existing key**
 5. **Generate a new key**
 6. **Update your local configuration**

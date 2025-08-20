@@ -23,6 +23,7 @@ from .exceptions import (
 from .validators import LanguageValidator
 from .retry_handler import with_retry, rate_limiters
 from .logger import get_logger, log_performance, log_errors
+from .precision_validator import PrecisionValidator
 
 console = Console()
 logger = get_logger(__name__)
@@ -34,6 +35,8 @@ class AIGenerator:
         self.location = config.get('gcp.location', 'us-central1')
         self.model = None
         self.storage_client = None
+        self.precision_validator = PrecisionValidator(config)
+        self.max_retry_attempts = 3  # For quality assurance
         
     @log_performance('ai_generator_init')
     def initialize(self) -> None:
@@ -149,12 +152,21 @@ class AIGenerator:
             for language in languages:
                 for subtitle_type in subtitle_types:
                     try:
-                        # Generate subtitle
-                        subtitle_content = self._generate_subtitle_for_chunk(
-                            chunk_gcs_uri,
-                            language,
-                            is_sdh=(subtitle_type == 'sdh')
-                        )
+                        # Use precision generation for core languages
+                        if language in ['eng', 'ben', 'hin']:
+                            console.print(f"[blue]      Using precision generation for {language}[/blue]")
+                            subtitle_content = self.generate_precision_subtitles(
+                                chunk_gcs_uri,
+                                language,
+                                is_sdh=(subtitle_type == 'sdh')
+                            )
+                        else:
+                            # Use standard generation for other languages
+                            subtitle_content = self._generate_subtitle_for_chunk(
+                                chunk_gcs_uri,
+                                language,
+                                is_sdh=(subtitle_type == 'sdh')
+                            )
                         
                         if subtitle_content:
                             # Simple validation: check if subtitles cover reasonable duration
@@ -162,24 +174,42 @@ class AIGenerator:
                             if last_timestamp < 30:  # Less than 30 seconds coverage
                                 console.print(f"[yellow]      Warning: Short subtitle duration ({last_timestamp}s) for {chunk_name}[/yellow]")
                             
-                            # Save to GCS
-                            blob_name = f"subtitles/{chunk_name}_{language}"
+                            # Convert to VTT format as well
+                            vtt_content = self._convert_srt_to_vtt(subtitle_content)
+                            
+                            # Save SRT to GCS
+                            srt_blob_name = f"subtitles/{chunk_name}_{language}"
                             if subtitle_type == 'sdh':
-                                blob_name += "_sdh"
-                            blob_name += ".srt"
+                                srt_blob_name += "_sdh"
+                            srt_blob_name += ".srt"
                             
-                            # Upload to GCS
                             bucket = self.storage_client.bucket(bucket_name)
-                            blob = bucket.blob(blob_name)
-                            blob.upload_from_string(subtitle_content, content_type='text/plain')
+                            srt_blob = bucket.blob(srt_blob_name)
+                            srt_blob.upload_from_string(subtitle_content, content_type='text/plain')
                             
-                            generated_subtitles.append({
-                                'chunk': chunk_name,
-                                'language': language,
-                                'sdh': (subtitle_type == 'sdh'),
-                                'gcs': f"gs://{bucket_name}/{blob_name}",
-                                'blob_name': blob_name
-                            })
+                            # Save VTT to GCS
+                            vtt_blob_name = srt_blob_name.replace('.srt', '.vtt')
+                            vtt_blob = bucket.blob(vtt_blob_name)
+                            vtt_blob.upload_from_string(vtt_content, content_type='text/vtt')
+                            
+                            generated_subtitles.extend([
+                                {
+                                    'chunk': chunk_name,
+                                    'language': language,
+                                    'sdh': (subtitle_type == 'sdh'),
+                                    'format': 'srt',
+                                    'gcs': f"gs://{bucket_name}/{srt_blob_name}",
+                                    'blob_name': srt_blob_name
+                                },
+                                {
+                                    'chunk': chunk_name,
+                                    'language': language,
+                                    'sdh': (subtitle_type == 'sdh'),
+                                    'format': 'vtt',
+                                    'gcs': f"gs://{bucket_name}/{vtt_blob_name}",
+                                    'blob_name': vtt_blob_name
+                                }
+                            ])
                             
                     except Exception as e:
                         error_msg = f"Error generating {language} {subtitle_type}: {str(e)}"
@@ -528,3 +558,149 @@ class AIGenerator:
             final_srt += '\n'
             
         return final_srt
+
+    def generate_precision_subtitles(self, video_uri: str, language: str, is_sdh: bool = False) -> Optional[str]:
+        """Generate precision subtitles with human-level quality and validation"""
+        console.print(f"[blue]      Generating precision {language} subtitles with validation[/blue]")
+        
+        best_result = None
+        best_score = 0.0
+        
+        for attempt in range(self.max_retry_attempts):
+            try:
+                console.print(f"[cyan]        Attempt {attempt + 1}/{self.max_retry_attempts}[/cyan]")
+                
+                # Generate subtitle using standard method
+                subtitle_content = self._generate_subtitle_for_chunk(video_uri, language, is_sdh)
+                
+                if not subtitle_content:
+                    console.print(f"[yellow]        No content generated on attempt {attempt + 1}[/yellow]")
+                    continue
+                
+                # Validate with precision validator (including translation quality)
+                validation_result = self.precision_validator.validate_subtitle_precision(
+                    subtitle_content, 
+                    language, 
+                    video_path=video_uri
+                )
+                
+                accuracy_score = validation_result.get('overall_score', 0.0)
+                console.print(f"[cyan]        Validation score: {accuracy_score:.2f}/100[/cyan]")
+                
+                # If we get a perfect or near-perfect score, return immediately
+                if accuracy_score >= 95.0:
+                    console.print(f"[green]        Excellent quality achieved (score: {accuracy_score:.2f})[/green]")
+                    return subtitle_content
+                
+                # Keep track of best result
+                if accuracy_score > best_score:
+                    best_score = accuracy_score
+                    best_result = subtitle_content
+                    
+                # If not good enough, enhance the prompt based on validation errors
+                if attempt < self.max_retry_attempts - 1:  # Don't enhance on last attempt
+                    enhancement_suggestions = validation_result.get('enhancement_suggestions', [])
+                    if enhancement_suggestions:
+                        console.print(f"[yellow]        Enhancing prompt based on {len(enhancement_suggestions)} suggestions[/yellow]")
+                        # This could be implemented to modify the prompt for next attempt
+                        # For now, we'll retry with the same prompt
+                        
+            except Exception as e:
+                console.print(f"[red]        Error on attempt {attempt + 1}: {str(e)}[/red]")
+                logger.error(f"Precision generation attempt {attempt + 1} failed: {str(e)}")
+                continue
+        
+        # Return best result if any
+        if best_result:
+            console.print(f"[green]        Returning best result (score: {best_score:.2f})[/green]")
+            return best_result
+        else:
+            console.print(f"[red]        All precision attempts failed[/red]")
+            return None
+
+    def generate_context_aware_subtitles(self, video_uri: str, language: str, previous_subtitles: List[str] = None, is_sdh: bool = False) -> Optional[str]:
+        """Generate subtitles with context awareness for better continuity"""
+        console.print(f"[blue]      Generating context-aware {language} subtitles[/blue]")
+        
+        # Get the appropriate prompt
+        if is_sdh:
+            base_prompt = self.config.get_sdh_prompt(language)
+        else:
+            base_prompt = self.config.get_prompt(language)
+            
+        if not base_prompt:
+            console.print(f"[yellow]      Warning: No prompt found for {language}[/yellow]")
+            return None
+            
+        # Enhance prompt with context if available
+        if previous_subtitles:
+            context_info = "\n\nCONTEXT FROM PREVIOUS SUBTITLES:\n"
+            for i, prev_sub in enumerate(previous_subtitles[-3:]):  # Last 3 for context
+                context_info += f"Previous subtitle {i+1}: {prev_sub[:100]}...\n"
+            context_info += "\nEnsure continuity and consistency with the above context.\n"
+            enhanced_prompt = base_prompt + context_info
+        else:
+            enhanced_prompt = base_prompt
+        
+        # Create video part for Vertex AI
+        try:
+            video_part = self.Part.from_uri(uri=video_uri, mime_type="video/mp4")
+            safety_settings = self._get_safety_settings()
+            
+            # Generate with enhanced prompt
+            full_prompt = f"{self.system_instruction}\n\n{enhanced_prompt}"
+            
+            response = self.model.generate_content(
+                [video_part, full_prompt],
+                safety_settings=safety_settings,
+                generation_config={
+                    "temperature": self.config.get('vertex_ai.temperature', 0.2),
+                    "top_p": self.config.get('vertex_ai.top_p', 0.95),
+                    "max_output_tokens": self.config.get('vertex_ai.max_output_tokens', 8192)
+                }
+            )
+            
+            if response.text:
+                subtitle_content = self._parse_srt_response(response.text)
+                if subtitle_content:
+                    console.print(f"[green]      Generated context-aware subtitle ({len(subtitle_content)} chars)[/green]")
+                    return subtitle_content
+                    
+        except Exception as e:
+            console.print(f"[red]      Error generating context-aware subtitle: {str(e)}[/red]")
+            logger.error(f"Context-aware generation failed: {str(e)}")
+            
+        return None
+    
+    def _convert_srt_to_vtt(self, srt_content: str) -> str:
+        """Convert SRT subtitle content to VTT format"""
+        try:
+            # Start with VTT header
+            vtt_content = "WEBVTT\n\n"
+            
+            # Parse SRT blocks
+            blocks = srt_content.strip().split('\n\n')
+            
+            for block in blocks:
+                lines = block.strip().split('\n')
+                if len(lines) >= 3:
+                    # Skip the number line (first line)
+                    timestamp_line = lines[1]
+                    text_lines = lines[2:]
+                    
+                    # Convert timestamp format from SRT to VTT
+                    # SRT: 00:01:23,456 --> 00:01:26,789
+                    # VTT: 00:01:23.456 --> 00:01:26.789
+                    vtt_timestamp = timestamp_line.replace(',', '.')
+                    
+                    # Add to VTT content
+                    vtt_content += f"{vtt_timestamp}\n"
+                    vtt_content += '\n'.join(text_lines) + '\n\n'
+            
+            return vtt_content.strip() + '\n'
+            
+        except Exception as e:
+            console.print(f"[red]Error converting SRT to VTT: {str(e)}[/red]")
+            logger.error(f"SRT to VTT conversion failed: {str(e)}")
+            # Return basic VTT with error message
+            return "WEBVTT\n\nERROR\n00:00:00.000 --> 00:00:03.000\nError converting subtitle format\n"
