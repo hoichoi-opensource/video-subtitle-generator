@@ -32,7 +32,7 @@ An enterprise-grade AI-powered subtitle generation system using Google Gemini AI
 
 ### 1️⃣ Setup
 ```bash
-git clone https://github.com/hoichoi-opensource//Video-subtitle-Generator.git
+git clone https://github.com/hoichoi-opensource/Video-subtitle-Generator.git
 cd Video-subtitle-Generator
 
 # Run automated setup (recommended)
