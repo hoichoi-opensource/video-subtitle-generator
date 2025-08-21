@@ -56,16 +56,16 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Create necessary directories with proper permissions
-RUN mkdir -p input output temp jobs logs chunks subtitles /data/input /data/output /data/temp /data/jobs /data/logs && \
-    chown -R appuser:appuser input output temp jobs logs chunks subtitles /data && \
+# Create necessary directories with proper permissions  
+RUN mkdir -p input output temp jobs logs chunks subtitles && \
+    chown -R appuser:appuser input output temp jobs logs chunks subtitles && \
     chmod -R 755 /app && \
-    chmod +x subtitle-gen run.sh main.py && \
+    chmod +x main.py docker-entrypoint.sh setup.sh && \
     # Ensure all Python files are readable
     find /app -name "*.py" -type f -exec chmod 644 {} \;
 
-# Create volume mount points
-VOLUME ["/data/input", "/data/output", "/data/logs", "/data/config"]
+# Create volume mount points for persistent data
+VOLUME ["/app/input", "/app/output", "/app/logs", "/app/temp", "/app/jobs"]
 
 # Switch to non-root user
 USER appuser

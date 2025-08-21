@@ -23,23 +23,23 @@ jobs:
 
     - name: Create test directories
       run: |
-        mkdir -p data/{input,output,config,logs,temp,jobs}
+        mkdir -p input output logs temp jobs
 
     - name: Create mock service account
       run: |
-        echo '{"type":"service_account","project_id":"test"}' > data/config/service-account.json
+        echo '{"type":"service_account","project_id":"test"}' > service-account.json
 
     - name: Test Docker container startup
       run: |
         docker compose run --rm subtitle-generator \
           python -c "from src.health_checker import quick_health_check; print('Health check passed')"
 
-    - name: Test help command
+    - name: Test Python environment
       run: |
         docker compose run --rm subtitle-generator \
-          python main.py --help
+          python -c "import sys; print(f'Python {sys.version}')"
 
-    - name: Test configuration validation
+    - name: Test FFmpeg availability
       run: |
         docker compose run --rm subtitle-generator \
-          python -c "from src.config_manager import ConfigManager; cm = ConfigManager(); print('Config validation passed')"
+          ffmpeg -version

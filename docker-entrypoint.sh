@@ -23,18 +23,17 @@ for dir in input output logs temp jobs; do
     fi
 done
 
-# Handle service account
-if [ -f "/data/config/service-account.json" ]; then
+# Handle service account (check multiple locations for backward compatibility)
+if [ -f "/app/service-account.json" ]; then
+    echo -e "${GREEN}✅ Service account found in project root${NC}"
+    export GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
+elif [ -f "/data/config/service-account.json" ]; then
     ln -sf /data/config/service-account.json /app/service-account.json
     echo -e "${GREEN}✅ Service account linked from /data/config/${NC}"
-    
-    # Set environment variable if not already set
-    if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-        export GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
-    fi
+    export GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 else
-    echo -e "${YELLOW}⚠️  No service account found in /data/config/${NC}"
-    echo -e "${YELLOW}   Mount your service-account.json to /data/config/${NC}"
+    echo -e "${YELLOW}⚠️  No service account found${NC}"
+    echo -e "${YELLOW}   Place your service-account.json in project root or mount to /data/config/${NC}"
     echo -e "${YELLOW}   Container will use Application Default Credentials if available${NC}"
 fi
 

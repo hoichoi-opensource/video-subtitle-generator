@@ -29,30 +29,30 @@ services:
     volumes:
       # Input/Output directories - map to your local directories
       - type: bind
-        source: ./data/input
-        target: /data/input
+        source: ./input
+        target: /app/input
         read_only: false
       - type: bind
-        source: ./data/output
-        target: /data/output
+        source: ./output
+        target: /app/output
         read_only: false
       - type: bind
-        source: ./data/logs
-        target: /data/logs
+        source: ./logs
+        target: /app/logs
         read_only: false
       - type: bind
-        source: ./data/temp
-        target: /data/temp
+        source: ./temp
+        target: /app/temp
         read_only: false
       - type: bind
-        source: ./data/jobs
-        target: /data/jobs
+        source: ./jobs
+        target: /app/jobs
         read_only: false
       
-      # Configuration and credentials
+      # Service account credential (optional)
       - type: bind
-        source: ./data/config
-        target: /data/config
+        source: ./service-account.json
+        target: /app/service-account.json
         read_only: true
       
       # Optional: Mount local development code for hot reload
@@ -107,8 +107,8 @@ services:
     
     # Override command examples:
     # command: ["python", "main.py", "--help"]
-    # command: ["python", "main.py", "--video", "/data/input/video.mp4", "--languages", "eng,hin"]
-    # command: ["python", "main.py", "--batch", "/data/input"]
+    # command: ["python", "main.py", "--video", "input/video.mp4", "--languages", "eng,hin"]
+    # command: ["python", "main.py", "--batch", "input/"]
 
   # Optional: Add monitoring stack - Updated 2025 versions
   prometheus:
@@ -200,13 +200,13 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ./data/monitoring/prometheus
+      device: ./monitoring/prometheus
   grafana_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/monitoring/grafana
+      device: ./monitoring/grafana
 
 networks:
   default:
